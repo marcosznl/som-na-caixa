@@ -14,7 +14,7 @@ function formatTime(at) {
   return new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-export default function Chat({ messages, height }) {
+export default function Chat({ messages, height, users }) {
   const [text, setText] = useState("");
   const listRef = useRef(null);
 
@@ -58,10 +58,11 @@ export default function Chat({ messages, height }) {
           }
 
           const color = nameToColor(message.author);
+          const icon = users?.find((user) => user.id === message.authorId)?.icon;
           return (
             <div key={message.id} className="chat__message">
-              <span className="chat__avatar" style={{ background: color }}>
-                {initialOf(message.author)}
+              <span className="chat__avatar" style={{ background: icon ? "transparent" : color }}>
+                {icon || initialOf(message.author)}
               </span>
               <span className="chat__bubble" style={{ "--msg-color": color }}>
                 <span className="chat__time chat__time--corner">{formatTime(message.at)}</span>

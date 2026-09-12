@@ -19,8 +19,17 @@ export function createRoomState() {
   };
 }
 
-export function addUser(state, socketId, name) {
-  state.users.set(socketId, { id: socketId, name, queue: [] });
+export function addUser(state, socketId, name, icon) {
+  state.users.set(socketId, { id: socketId, name, icon: icon || null, queue: [] });
+}
+
+// Retorna false se a pessoa não estiver mais na sala (ex: desconectou logo
+// depois de escolher o ícone).
+export function setUserIcon(state, socketId, icon) {
+  const user = state.users.get(socketId);
+  if (!user) return false;
+  user.icon = icon;
+  return true;
 }
 
 export function removeUser(state, socketId) {

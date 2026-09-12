@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { socket } from "./socket";
+import { getStoredIcon } from "./icons";
 import JoinScreen from "./components/JoinScreen";
 import Room from "./components/Room";
 import "./App.css";
@@ -64,7 +65,7 @@ export default function App() {
   function handleJoin(name, password) {
     setJoinError("");
     socket.connect();
-    socket.emit("user:join", { name, password }, (response) => {
+    socket.emit("user:join", { name, password, icon: getStoredIcon() }, (response) => {
       if (response?.error) {
         // Não desconecta aqui: isso disparava o handler de "disconnect" e
         // sobrescrevia essa mensagem de erro com "Conexão perdida...".

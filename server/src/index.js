@@ -10,6 +10,7 @@ import {
   createRoomState,
   addUser,
   removeUser,
+  setUserIcon,
   joinBooth,
   leaveBooth,
   advanceQueue,
@@ -48,6 +49,10 @@ const ROOM_PASSWORD = process.env.ROOM_PASSWORD || "";
 const MAX_NAME_LENGTH = 24;
 const MAX_CHAT_LENGTH = 300;
 const ALLOWED_REACTIONS = ["🔥", "💃", "👍", "😂", "❤️"];
+const AVAILABLE_ICONS = [
+  "😀", "😎", "🤖", "🐱", "🐶", "🦊", "🐼", "🦄",
+  "👾", "🎮", "🔥", "⚡", "🌟", "🍕", "⚽", "🎸",
+];
 
 const app = express();
 app.use(cors({ origin: CLIENT_ORIGIN }));
@@ -205,13 +210,14 @@ io.on("connection", (socket) => {
     broadcastState();
   }
 
-  socket.on("user:join", ({ name: rawName, password } = {}, ack) => {
+  socket.on("user:join", ({ name: rawName, password, icon } = {}, ack) => {
     if (ROOM_PASSWORD && password !== ROOM_PASSWORD) {
       ack?.({ error: "Senha da sala incorreta." });
       return;
     }
     const name = String(rawName || "").trim().slice(0, MAX_NAME_LENGTH) || `user-${nanoid(4)}`;
-    addUser(state, socket.id, name);
+    const validIcon = AVAILABLE_ICONS.includes(icon) ? icon : null;
+    addUser(state, socket.id, name, validIcon);
     ack?.({ id: socket.id, name });
     broadcastState();
     pushChatMessage(state, {
@@ -222,6 +228,13 @@ io.on("connection", (socket) => {
       at: Date.now(),
     });
     broadcastState();
+  });
+
+  socket.on("user:setIcon", (icon) => {
+    if (!AVAILABLE_ICONS.includes(icon)) return;
+    if (setUserIcon(state, socket.id, icon)) {
+      broadcastState();
+    }
   });
 
   socket.on("booth:join", () => {

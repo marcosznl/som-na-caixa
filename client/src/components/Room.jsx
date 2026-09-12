@@ -7,11 +7,13 @@ import ThemeToggle from "./ThemeToggle";
 import ReactionBar from "./ReactionBar";
 import ReactionFloaters from "./ReactionFloaters";
 import ProgressBar from "./ProgressBar";
+import IconPicker from "./IconPicker";
 import { nameToColor } from "../nameColor";
 
 export default function Room({ roomState, myId }) {
   const { users, booth, currentDjId, currentTrack, chatHistory, playHistory } = roomState;
   const isCurrentDj = currentDjId === myId;
+  const me = users.find((user) => user.id === myId);
 
   // Mede a altura real do player pra o chat ficar do mesmo tamanho (em vez
   // de esticar até o tamanho da coluna inteira, incluindo a fila de DJs).
@@ -45,6 +47,7 @@ export default function Room({ roomState, myId }) {
         <h1>plug.dj pessoal 🎧</h1>
         <div className="room__header-right">
           <span className="room__user-count">{users.length} na sala</span>
+          <IconPicker currentIcon={me?.icon} />
           <ThemeToggle />
         </div>
       </header>
@@ -63,7 +66,7 @@ export default function Room({ roomState, myId }) {
           <DjBooth booth={booth} currentDjId={currentDjId} currentTrack={currentTrack} myId={myId} />
         </main>
         <aside className="room__sidebar">
-          <Chat messages={chatHistory} height={playerHeight} />
+          <Chat messages={chatHistory} height={playerHeight} users={users} />
           <History history={playHistory} />
         </aside>
       </div>
