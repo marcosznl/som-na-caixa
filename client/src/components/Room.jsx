@@ -4,6 +4,8 @@ import DjBooth from "./DjBooth";
 import Chat from "./Chat";
 import History from "./History";
 import ThemeToggle from "./ThemeToggle";
+import ReactionBar from "./ReactionBar";
+import ReactionFloaters from "./ReactionFloaters";
 
 export default function Room({ roomState, myId }) {
   const { users, booth, currentDjId, currentTrack, chatHistory, playHistory } = roomState;
@@ -35,9 +37,11 @@ export default function Room({ roomState, myId }) {
       </header>
       <div className="room__body">
         <main className="room__main">
-          <div ref={playerWrapRef}>
+          <div className="room__player-wrap" ref={playerWrapRef}>
             <Player currentTrack={currentTrack} isCurrentDj={isCurrentDj} />
+            <ReactionFloaters />
           </div>
+          <ReactionBar />
           <DjBooth booth={booth} currentDjId={currentDjId} currentTrack={currentTrack} myId={myId} />
         </main>
         <aside className="room__sidebar">

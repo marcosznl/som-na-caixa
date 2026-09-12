@@ -1,6 +1,7 @@
 import { socket } from "../socket";
 import SongPicker from "./SongPicker";
 import MyQueueList from "./MyQueueList";
+import Equalizer from "./Equalizer";
 import { nameToColor } from "../nameColor";
 
 export default function DjBooth({ booth, currentDjId, currentTrack, myId }) {
@@ -38,6 +39,7 @@ export default function DjBooth({ booth, currentDjId, currentTrack, myId }) {
 
       {currentTrack && (
         <div className="dj-booth__now-playing">
+          <Equalizer />
           <span>Tocando agora:</span> <strong>{currentTrack.title}</strong>
           <span className="dj-booth__now-playing-dj">
             {" "}
@@ -55,7 +57,7 @@ export default function DjBooth({ booth, currentDjId, currentTrack, myId }) {
         {booth.length === 0 && <li className="dj-booth__empty">Ninguém na fila ainda.</li>}
         {booth.map((user, index) => (
           <li key={user.id} className={user.id === currentDjId ? "is-playing" : ""}>
-            {user.id === currentDjId ? "🎧 " : `${index + 1}. `}
+            {user.id === currentDjId ? <Equalizer /> : `${index + 1}. `}
             <span style={{ color: nameToColor(user.name) }}>{user.name}</span>
             {user.id === myId ? " (você)" : ""}
             {user.queue?.length > 0 ? ` — ${user.queue.length} na fila` : ""}

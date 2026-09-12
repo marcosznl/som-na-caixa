@@ -13,6 +13,7 @@ export default function Player({ currentTrack, isCurrentDj }) {
   const playerRef = useRef(null);
   const loadedVideoIdRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
+  const [justChanged, setJustChanged] = useState(false);
 
   // O player só é criado uma vez (guarda playerRef.current abaixo), então o
   // onStateChange precisa ler isCurrentDj de uma ref sempre atualizada — se
@@ -59,6 +60,9 @@ export default function Player({ currentTrack, isCurrentDj }) {
     if (loadedVideoIdRef.current !== currentTrack.videoId) {
       loadedVideoIdRef.current = currentTrack.videoId;
       player.loadVideoById({ videoId: currentTrack.videoId, startSeconds: elapsed });
+      // Dispara o brilho de "música nova" na borda do player.
+      setJustChanged(true);
+      setTimeout(() => setJustChanged(false), 900);
       return;
     }
 
@@ -84,7 +88,7 @@ export default function Player({ currentTrack, isCurrentDj }) {
   }, [currentTrack, isReady]);
 
   return (
-    <div className="player">
+    <div className={`player${justChanged ? " player--flash" : ""}`}>
       <div className="player__frame" ref={containerRef} />
       {!currentTrack && (
         <div className="player__placeholder">Aguardando o DJ escolher uma música…</div>

@@ -47,6 +47,7 @@ const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const ROOM_PASSWORD = process.env.ROOM_PASSWORD || "";
 const MAX_NAME_LENGTH = 24;
 const MAX_CHAT_LENGTH = 300;
+const ALLOWED_REACTIONS = ["🔥", "💃", "👍", "😂", "❤️"];
 
 const app = express();
 app.use(cors({ origin: CLIENT_ORIGIN }));
@@ -314,6 +315,14 @@ io.on("connection", (socket) => {
       at: Date.now(),
     });
     broadcastState();
+  });
+
+  // Reação rápida (emoji flutuante) — não faz parte do estado da sala, é só
+  // um "ao vivo": repassa pra todo mundo na hora, sem guardar histórico.
+  socket.on("reaction:send", (emoji) => {
+    if (!state.users.has(socket.id)) return;
+    if (!ALLOWED_REACTIONS.includes(emoji)) return;
+    io.emit("reaction:fly", { id: nanoid(), emoji, x: Math.random() });
   });
 
   socket.on("disconnect", () => {
