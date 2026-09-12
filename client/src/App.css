@@ -429,12 +429,13 @@
   font-weight: 700;
 }
 .chat__bubble {
+  position: relative;
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 6px 10px;
+  padding: 6px 44px 6px 10px;
   border-radius: 4px 10px 10px 10px;
   background: var(--code-bg);
   background: color-mix(in srgb, var(--msg-color) 12%, var(--code-bg));
@@ -444,6 +445,18 @@
 }
 .chat__text {
   word-break: break-word;
+}
+.chat__time {
+  font-size: 10px;
+  color: var(--text);
+  opacity: 0.6;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.chat__time--corner {
+  position: absolute;
+  top: 6px;
+  right: 10px;
 }
 .chat__message--system {
   align-items: center;
@@ -461,6 +474,10 @@
 }
 .chat__system-text {
   font-style: italic;
+  flex: 1;
+}
+.chat__message--system .chat__time {
+  margin-left: auto;
 }
 .chat__form {
   display: flex;

@@ -10,6 +10,10 @@ const SYSTEM_META = {
 };
 const DEFAULT_SYSTEM_META = { icon: "ℹ️", color: "#868e96" };
 
+function formatTime(at) {
+  return new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 export default function Chat({ messages, height }) {
   const [text, setText] = useState("");
   const listRef = useRef(null);
@@ -48,6 +52,7 @@ export default function Chat({ messages, height }) {
               >
                 <span className="chat__system-icon">{meta.icon}</span>
                 <span className="chat__system-text">{message.text}</span>
+                <span className="chat__time">{formatTime(message.at)}</span>
               </div>
             );
           }
@@ -59,6 +64,7 @@ export default function Chat({ messages, height }) {
                 {initialOf(message.author)}
               </span>
               <span className="chat__bubble" style={{ "--msg-color": color }}>
+                <span className="chat__time chat__time--corner">{formatTime(message.at)}</span>
                 <strong className="chat__author" style={{ color }}>
                   {message.author}
                 </strong>
