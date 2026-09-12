@@ -634,3 +634,33 @@
   border-color: var(--accent-border);
   transform: scale(1.15);
 }
+
+/* Brilho ambiente atrás do player, na cor de quem está tocando */
+.room__player-wrap {
+  position: relative;
+}
+.room__player-wrap::before {
+  content: "";
+  position: absolute;
+  inset: -24px;
+  background: var(--ambient-color, transparent);
+  filter: blur(40px);
+  opacity: 0.35;
+  z-index: -1;
+  border-radius: 24px;
+  transition: background 0.6s ease;
+}
+
+/* Barra de progresso estilizada da música atual */
+.progress-bar {
+  width: 100%;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--code-bg);
+  overflow: hidden;
+}
+.progress-bar__fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s linear, background 0.4s ease;
+}

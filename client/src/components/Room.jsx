@@ -6,6 +6,8 @@ import History from "./History";
 import ThemeToggle from "./ThemeToggle";
 import ReactionBar from "./ReactionBar";
 import ReactionFloaters from "./ReactionFloaters";
+import ProgressBar from "./ProgressBar";
+import { nameToColor } from "../nameColor";
 
 export default function Room({ roomState, myId }) {
   const { users, booth, currentDjId, currentTrack, chatHistory, playHistory } = roomState;
@@ -26,6 +28,17 @@ export default function Room({ roomState, myId }) {
     return () => observer.disconnect();
   }, []);
 
+  // Título da aba mostra a música tocando, pra dar pra ver sem trocar de aba.
+  useEffect(() => {
+    document.title = currentTrack ? `🎵 ${currentTrack.title}` : "plug.dj pessoal";
+    return () => {
+      document.title = "plug.dj pessoal";
+    };
+  }, [currentTrack]);
+
+  // Brilho ambiente atrás do player na cor de quem está tocando agora.
+  const ambientColor = currentTrack ? nameToColor(currentTrack.djName) : null;
+
   return (
     <div className="room">
       <header className="room__header">
@@ -37,10 +50,15 @@ export default function Room({ roomState, myId }) {
       </header>
       <div className="room__body">
         <main className="room__main">
-          <div className="room__player-wrap" ref={playerWrapRef}>
+          <div
+            className="room__player-wrap"
+            ref={playerWrapRef}
+            style={{ "--ambient-color": ambientColor || "transparent" }}
+          >
             <Player currentTrack={currentTrack} isCurrentDj={isCurrentDj} />
             <ReactionFloaters />
           </div>
+          <ProgressBar currentTrack={currentTrack} />
           <ReactionBar />
           <DjBooth booth={booth} currentDjId={currentDjId} currentTrack={currentTrack} myId={myId} />
         </main>

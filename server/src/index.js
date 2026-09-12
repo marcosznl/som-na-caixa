@@ -112,6 +112,12 @@ async function scheduleSafetyTimeout(track) {
   // Enquanto buscava a duração a faixa pode ter mudado (pulada, etc.) — se
   // não for mais a mesma, essa agenda já não faz sentido.
   if (state.currentTrack !== track) return;
+  if (duration) {
+    // Também aproveita pra mandar a duração pro cliente, usada na barra de
+    // progresso — chega um instante depois do início, sem problema.
+    track.duration = duration;
+    broadcastState();
+  }
   const timeoutMs = duration ? duration * 1000 + SAFETY_GRACE_MS : SAFETY_FALLBACK_MS;
   safetyTimeout = setTimeout(() => {
     if (state.currentTrack === track) {
