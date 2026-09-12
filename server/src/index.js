@@ -129,6 +129,13 @@ function startTrackForCurrentDj(videoId, title) {
     djId,
     djName: dj?.name ?? "???",
   };
+  pushChatMessage(state, {
+    id: nanoid(),
+    system: true,
+    kind: "track",
+    text: `${state.currentTrack.djName} está tocando: ${state.currentTrack.title}`,
+    at: Date.now(),
+  });
 }
 
 // Se ninguém está tocando, puxa a próxima música da fila pessoal do DJ atual
@@ -169,6 +176,7 @@ io.on("connection", (socket) => {
     pushChatMessage(state, {
       id: nanoid(),
       system: true,
+      kind: "join",
       text: `${name} entrou na sala.`,
       at: Date.now(),
     });
@@ -176,9 +184,17 @@ io.on("connection", (socket) => {
   });
 
   socket.on("booth:join", () => {
-    if (!state.users.has(socket.id)) return;
+    const user = state.users.get(socket.id);
+    if (!user) return;
     const joined = joinBooth(state, socket.id);
     if (!joined) return;
+    pushChatMessage(state, {
+      id: nanoid(),
+      system: true,
+      kind: "dj",
+      text: `${user.name} entrou na fila de DJs.`,
+      at: Date.now(),
+    });
     // Se ninguém estava tocando, esse pode virar o DJ da vez imediatamente.
     if (getCurrentDjId(state) === null) {
       moveToNextDj();
@@ -267,6 +283,7 @@ io.on("connection", (socket) => {
       pushChatMessage(state, {
         id: nanoid(),
         system: true,
+        kind: "leave",
         text: `${user.name} saiu da sala.`,
         at: Date.now(),
       });

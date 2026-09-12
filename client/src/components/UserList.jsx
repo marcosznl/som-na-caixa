@@ -1,3 +1,5 @@
+import { nameToColor } from "../nameColor";
+
 export default function UserList({ users, booth, currentDjId, myId }) {
   const boothIds = new Set(booth.map((user) => user.id));
 
@@ -10,7 +12,7 @@ export default function UserList({ users, booth, currentDjId, myId }) {
             <span className="user-list__icon">
               {user.id === currentDjId ? "🎧" : boothIds.has(user.id) ? "🎤" : "👤"}
             </span>
-            {user.name}
+            <span style={{ color: nameToColor(user.name) }}>{user.name}</span>
             {user.id === myId ? " (você)" : ""}
           </li>
         ))}

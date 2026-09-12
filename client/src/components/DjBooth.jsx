@@ -1,5 +1,6 @@
 import { socket } from "../socket";
 import SongPicker from "./SongPicker";
+import { nameToColor } from "../nameColor";
 
 export default function DjBooth({ booth, currentDjId, currentTrack, myId }) {
   const me = booth.find((user) => user.id === myId);
@@ -54,7 +55,10 @@ export default function DjBooth({ booth, currentDjId, currentTrack, myId }) {
       {currentTrack && (
         <div className="dj-booth__now-playing">
           <span>Tocando agora:</span> <strong>{currentTrack.title}</strong>
-          <span className="dj-booth__now-playing-dj"> — DJ {currentTrack.djName}</span>
+          <span className="dj-booth__now-playing-dj">
+            {" "}
+            — DJ <span style={{ color: nameToColor(currentTrack.djName) }}>{currentTrack.djName}</span>
+          </span>
           {isInBooth && (
             <button className="btn btn--ghost" onClick={() => socket.emit("track:skip")}>
               Pular
@@ -68,7 +72,7 @@ export default function DjBooth({ booth, currentDjId, currentTrack, myId }) {
         {booth.map((user, index) => (
           <li key={user.id} className={user.id === currentDjId ? "is-playing" : ""}>
             {user.id === currentDjId ? "🎧 " : `${index + 1}. `}
-            {user.name}
+            <span style={{ color: nameToColor(user.name) }}>{user.name}</span>
             {user.id === myId ? " (você)" : ""}
             {user.queue?.length > 0 ? ` — ${user.queue.length} na fila` : ""}
           </li>
