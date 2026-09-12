@@ -10,6 +10,7 @@ const EMPTY_ROOM_STATE = {
   currentDjId: null,
   currentTrack: null,
   chatHistory: [],
+  playHistory: [],
 };
 
 // Quanto tempo esperar por uma reconexão automática antes de desistir e

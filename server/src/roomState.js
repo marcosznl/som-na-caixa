@@ -5,6 +5,7 @@
 // é pulada), passa a vez para o próximo da cabine.
 
 const MAX_CHAT_HISTORY = 100;
+const MAX_PLAY_HISTORY = 50;
 const MAX_QUEUE_PER_USER = 20;
 
 export function createRoomState() {
@@ -14,6 +15,7 @@ export function createRoomState() {
     currentDjIndex: -1, // índice em `booth` de quem está tocando agora
     currentTrack: null, // { videoId, title, startedAt, djId, djName }
     chatHistory: [], // { id, author, text, at }
+    playHistory: [], // { id, videoId, title, djName, startedAt }, mais recente primeiro
   };
 }
 
@@ -137,6 +139,14 @@ export function pushChatMessage(state, message) {
   }
 }
 
+// Registra uma música que começou a tocar no histórico (mais recente primeiro).
+export function pushPlayHistory(state, entry) {
+  state.playHistory.unshift(entry);
+  if (state.playHistory.length > MAX_PLAY_HISTORY) {
+    state.playHistory.pop();
+  }
+}
+
 // Serializa o estado pro cliente (troca socketId por nomes onde faz sentido).
 export function serializeState(state) {
   const currentDjId = getCurrentDjId(state);
@@ -146,5 +156,6 @@ export function serializeState(state) {
     currentDjId,
     currentTrack: state.currentTrack,
     chatHistory: state.chatHistory,
+    playHistory: state.playHistory,
   };
 }

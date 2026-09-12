@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import Player from "./Player";
 import DjBooth from "./DjBooth";
 import Chat from "./Chat";
+import History from "./History";
 import ThemeToggle from "./ThemeToggle";
 
 export default function Room({ roomState, myId }) {
-  const { users, booth, currentDjId, currentTrack, chatHistory } = roomState;
+  const { users, booth, currentDjId, currentTrack, chatHistory, playHistory } = roomState;
   const isCurrentDj = currentDjId === myId;
 
   // Mede a altura real do player pra o chat ficar do mesmo tamanho (em vez
@@ -41,6 +42,7 @@ export default function Room({ roomState, myId }) {
         </main>
         <aside className="room__sidebar">
           <Chat messages={chatHistory} height={playerHeight} />
+          <History history={playHistory} />
         </aside>
       </div>
     </div>

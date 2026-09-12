@@ -19,6 +19,7 @@ import {
   popNextFromQueue,
   getCurrentDjId,
   pushChatMessage,
+  pushPlayHistory,
   serializeState,
 } from "./roomState.js";
 import { extractYoutubeId } from "./youtube.js";
@@ -146,6 +147,13 @@ function startTrackForCurrentDj(videoId, title) {
     kind: "track",
     text: `${track.djName} está tocando: ${track.title}`,
     at: Date.now(),
+  });
+  pushPlayHistory(state, {
+    id: nanoid(),
+    videoId: track.videoId,
+    title: track.title,
+    djName: track.djName,
+    startedAt: track.startedAt,
   });
   clearSafetyTimeout();
   scheduleSafetyTimeout(track);
