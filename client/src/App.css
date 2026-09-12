@@ -689,6 +689,8 @@
 .icon-picker__trigger {
   width: 32px;
   height: 32px;
+  padding: 0;
+  box-sizing: border-box;
   border-radius: 50%;
   border: 1px solid var(--border);
   background: var(--code-bg);
@@ -699,6 +701,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
 }
 .icon-picker__trigger:hover {
   border-color: var(--accent-border);
