@@ -1,7 +1,6 @@
 import Player from "./Player";
 import DjBooth from "./DjBooth";
 import Chat from "./Chat";
-import UserList from "./UserList";
 import ThemeToggle from "./ThemeToggle";
 
 export default function Room({ roomState, myId }) {
@@ -24,7 +23,6 @@ export default function Room({ roomState, myId }) {
         </main>
         <aside className="room__sidebar">
           <Chat messages={chatHistory} />
-          <UserList users={users} booth={booth} currentDjId={currentDjId} myId={myId} />
         </aside>
       </div>
     </div>
