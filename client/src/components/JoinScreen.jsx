@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ThemeToggle from "./ThemeToggle";
 
 export default function JoinScreen({ onJoin, error }) {
   const [name, setName] = useState("");
@@ -13,6 +14,7 @@ export default function JoinScreen({ onJoin, error }) {
 
   return (
     <div className="join-screen">
+      <ThemeToggle />
       <form className="join-screen__card" onSubmit={handleSubmit}>
         <h1>plug.dj pessoal 🎧</h1>
         <p>Escolha um nome para entrar na sala.</p>

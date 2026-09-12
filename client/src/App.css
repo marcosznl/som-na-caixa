@@ -32,6 +32,7 @@
 
 /* Tela de entrada */
 .join-screen {
+  position: relative;
   flex: 1;
   display: flex;
   align-items: center;
@@ -87,16 +88,43 @@
   font-size: 22px;
   margin: 0;
 }
+.room__header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 .room__user-count {
   color: var(--text);
   font-size: 14px;
+}
+.theme-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.theme-toggle:hover {
+  border-color: var(--accent-border);
+}
+.join-screen .theme-toggle {
+  position: absolute;
+  top: 16px;
+  right: 16px;
 }
 .room__body {
   flex: 1;
   display: flex;
   gap: 20px;
   padding: 20px 24px;
-  align-items: flex-start;
+  align-items: stretch;
   flex-wrap: wrap;
 }
 .room__main {
@@ -110,6 +138,9 @@
   flex: 1 1 300px;
   min-width: 280px;
   max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 /* Player */
@@ -142,6 +173,10 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 .dj-booth__header {
   display: flex;
@@ -307,6 +342,9 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 .dj-booth__list li {
   font-size: 14px;
@@ -328,7 +366,9 @@
   padding: 16px;
   display: flex;
   flex-direction: column;
-  height: 480px;
+  flex: 1 1 auto;
+  min-height: 260px;
+  overflow: hidden;
 }
 .chat h2 {
   margin: 0 0 12px;
@@ -370,7 +410,7 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
-  margin-top: 20px;
+  flex: 0 0 auto;
 }
 .user-list h2 {
   margin: 0 0 12px;

@@ -2,6 +2,7 @@ import Player from "./Player";
 import DjBooth from "./DjBooth";
 import Chat from "./Chat";
 import UserList from "./UserList";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Room({ roomState, myId }) {
   const { users, booth, currentDjId, currentTrack, chatHistory } = roomState;
@@ -11,7 +12,10 @@ export default function Room({ roomState, myId }) {
     <div className="room">
       <header className="room__header">
         <h1>plug.dj pessoal 🎧</h1>
-        <span className="room__user-count">{users.length} na sala</span>
+        <div className="room__header-right">
+          <span className="room__user-count">{users.length} na sala</span>
+          <ThemeToggle />
+        </div>
       </header>
       <div className="room__body">
         <main className="room__main">
