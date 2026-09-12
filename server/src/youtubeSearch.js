@@ -21,10 +21,15 @@ export async function searchYoutube(query, apiKey) {
 
   const res = await fetch(`${SEARCH_ENDPOINT}?${params.toString()}`);
   if (!res.ok) {
+    // Repassa o motivo real que o Google devolveu (ex: "API key not valid",
+    // "quotaExceeded") em vez de só o status HTTP — bem mais fácil de
+    // diagnosticar do que um "falhou (status 400)" genérico.
+    const body = await res.json().catch(() => null);
+    const reason = body?.error?.message || body?.error?.errors?.[0]?.reason;
     if (res.status === 403) {
-      throw new Error("Cota da API do YouTube excedida ou chave inválida.");
+      throw new Error(`Cota da API do YouTube excedida ou chave inválida. ${reason || ""}`.trim());
     }
-    throw new Error(`Busca do YouTube falhou (status ${res.status}).`);
+    throw new Error(`Busca do YouTube falhou (status ${res.status}). ${reason || ""}`.trim());
   }
 
   const data = await res.json();
