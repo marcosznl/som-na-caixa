@@ -1,0 +1,366 @@
+.btn {
+  font: inherit;
+  font-size: 15px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+.btn:hover {
+  border-color: var(--accent-border);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn--danger {
+  background: transparent;
+  border-color: #e05c5c;
+  color: #e05c5c;
+}
+.btn--ghost {
+  background: transparent;
+  margin-left: 12px;
+}
+
+/* Tela de entrada */
+.join-screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.join-screen__card {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+.join-screen__card h1 {
+  margin: 0;
+  font-size: 32px;
+  text-align: center;
+}
+.join-screen__card p {
+  text-align: center;
+  margin-bottom: 8px;
+}
+.join-screen__card input {
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+}
+.join-screen__error {
+  color: #e05c5c;
+  font-size: 14px;
+}
+
+/* Sala */
+.room {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  text-align: left;
+}
+.room__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.room__header h1 {
+  font-size: 22px;
+  margin: 0;
+}
+.room__user-count {
+  color: var(--text);
+  font-size: 14px;
+}
+.room__body {
+  flex: 1;
+  display: flex;
+  gap: 20px;
+  padding: 20px 24px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.room__main {
+  flex: 2 1 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.room__sidebar {
+  flex: 1 1 300px;
+  min-width: 280px;
+  max-width: 380px;
+}
+
+/* Player */
+.player {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.player__frame {
+  width: 100%;
+  height: 100%;
+}
+.player__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cfcfcf;
+  font-size: 15px;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Fila de DJs */
+.dj-booth {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.dj-booth__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.dj-booth__header h2 {
+  margin: 0;
+}
+.dj-booth__submit {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.dj-booth__submit p {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+.dj-booth__submit-row {
+  display: flex;
+  gap: 8px;
+}
+.dj-booth__submit-row input {
+  flex: 1;
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+}
+.dj-booth__error {
+  color: #e05c5c;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+/* Busca de música */
+.song-picker__form {
+  display: flex;
+  gap: 8px;
+}
+.song-picker__form input {
+  flex: 1;
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+}
+.song-picker__error {
+  color: #e05c5c;
+  font-size: 13px;
+  margin-top: 6px;
+}
+.song-picker__results {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.song-picker__result {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.song-picker__result:hover {
+  background: var(--accent-bg);
+}
+.song-picker__result:disabled {
+  cursor: default;
+}
+.song-picker__result-action {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.song-picker__result img {
+  border-radius: 4px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+.song-picker__result-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.song-picker__result-title {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.song-picker__result-channel {
+  font-size: 12px;
+  color: var(--text);
+}
+.dj-booth__my-queue {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--accent-border);
+}
+.dj-booth__my-queue-heading {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.dj-booth__my-queue ol {
+  list-style: decimal;
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dj-booth__my-queue li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+.dj-booth__my-queue-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.btn--small {
+  padding: 4px 8px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.dj-booth__now-playing {
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+.dj-booth__now-playing-dj {
+  color: var(--text);
+}
+.dj-booth__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dj-booth__list li {
+  font-size: 14px;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+.dj-booth__list li.is-playing {
+  background: var(--accent-bg);
+  font-weight: 600;
+}
+.dj-booth__empty {
+  color: var(--text);
+}
+
+/* Chat */
+.chat {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  height: 480px;
+}
+.chat h2 {
+  margin: 0 0 12px;
+}
+.chat__messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.chat__message {
+  font-size: 14px;
+  line-height: 140%;
+  word-break: break-word;
+}
+.chat__message--system {
+  color: var(--text);
+  font-style: italic;
+  font-size: 13px;
+}
+.chat__form {
+  display: flex;
+  gap: 8px;
+}
+.chat__form input {
+  flex: 1;
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+}
