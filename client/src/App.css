@@ -143,6 +143,20 @@
   gap: 20px;
 }
 
+/* Só faz as duas colunas "esticarem" pra mesma altura quando elas de fato
+   ficam lado a lado — abaixo disso (empilhado) cada caixa fica do tamanho
+   natural do próprio conteúdo, senão o chat ficava esticado sem motivo. */
+@media (min-width: 860px) {
+  .dj-booth {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .chat {
+    flex: 1 1 auto;
+    min-height: 260px;
+  }
+}
+
 /* Player */
 .player {
   position: relative;
@@ -173,10 +187,8 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
-  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  min-height: 0;
 }
 .dj-booth__header {
   display: flex;
@@ -366,8 +378,7 @@
   padding: 16px;
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 260px;
+  max-height: 420px;
   overflow: hidden;
 }
 .chat h2 {
