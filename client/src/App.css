@@ -364,3 +364,31 @@
   background: var(--bg);
   color: var(--text-h);
 }
+
+/* Quem está na sala */
+.user-list {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 20px;
+}
+.user-list h2 {
+  margin: 0 0 12px;
+}
+.user-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.user-list li {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.user-list__icon {
+  flex-shrink: 0;
+}

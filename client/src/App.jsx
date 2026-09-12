@@ -39,8 +39,11 @@ export default function App() {
     socket.connect();
     socket.emit("user:join", { name, password }, (response) => {
       if (response?.error) {
+        // Não desconecta aqui: isso disparava o handler de "disconnect" e
+        // sobrescrevia essa mensagem de erro com "Conexão perdida...".
+        // Ficar conectado sem ter "entrado" é inofensivo — o servidor não
+        // adiciona esse socket a lugar nenhum até um user:join bem-sucedido.
         setJoinError(response.error);
-        socket.disconnect();
         return;
       }
       setJoined(true);
