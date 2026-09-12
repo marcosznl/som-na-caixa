@@ -4,7 +4,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";
 import cors from "cors";
-import rateLimit from "express-rate-limit";
 import { Server } from "socket.io";
 import { nanoid } from "nanoid";
 import {
@@ -47,48 +46,17 @@ const ROOM_PASSWORD = process.env.ROOM_PASSWORD || "";
 const MAX_NAME_LENGTH = 24;
 const MAX_CHAT_LENGTH = 300;
 
-// A busca no YouTube custa 100 unidades de cota por chamada, e a cota
-// gratuita padrão é 10.000/dia — ou seja, ~100 buscas/dia no total. Esse
-// limite diário protege a chave de ser estourada por uso (acidental ou não).
-const SEARCH_DAILY_LIMIT = Number(process.env.YOUTUBE_SEARCH_DAILY_LIMIT) || 80;
-let searchCountToday = 0;
-let searchCountDate = new Date().toDateString();
-
-function checkDailySearchLimit() {
-  const today = new Date().toDateString();
-  if (today !== searchCountDate) {
-    searchCountDate = today;
-    searchCountToday = 0;
-  }
-  if (searchCountToday >= SEARCH_DAILY_LIMIT) return false;
-  searchCountToday += 1;
-  return true;
-}
-
 const app = express();
 app.use(cors({ origin: CLIENT_ORIGIN }));
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
-// Limite por IP: evita que uma pessoa (de propósito ou clicando "Buscar" sem
-// parar) consuma a cota da API sozinha.
-const searchLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000,
-  limit: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (_req, res) => {
-    res.status(429).json({ error: "Muitas buscas em pouco tempo. Espere um pouco e tente de novo." });
-  },
-});
-
-app.get("/api/search", searchLimiter, async (req, res) => {
+// Sem limite artificial aqui — quando a cota real do Google acabar, a busca
+// simplesmente falha com o motivo devolvido por eles (ver youtubeSearch.js),
+// e ainda dá pra colar o link direto no mesmo campo enquanto isso.
+app.get("/api/search", async (req, res) => {
   const query = String(req.query.q || "").trim();
   if (!query) {
     res.status(400).json({ error: "Parâmetro 'q' é obrigatório." });
-    return;
-  }
-  if (!checkDailySearchLimit()) {
-    res.status(429).json({ error: "Limite diário de buscas do YouTube atingido. Tente de novo amanhã." });
     return;
   }
   try {
