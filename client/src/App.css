@@ -155,6 +155,10 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  /* Não estica pra acompanhar a altura da coluna do player: o chat agora
+     tem altura própria (igual à do player), então a sidebar deve só se
+     ajustar a esse tamanho, sem sobrar espaço vazio dentro dela. */
+  align-self: flex-start;
 }
 
 /* Player */
@@ -373,6 +377,7 @@
 
 /* Chat */
 .chat {
+  box-sizing: border-box;
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
@@ -457,25 +462,4 @@
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text-h);
-}
-
-/* Só faz as duas colunas "esticarem" pra mesma altura quando elas de fato
-   ficam lado a lado — abaixo disso (empilhado) cada caixa fica do tamanho
-   natural do próprio conteúdo, senão o chat ficava esticado sem motivo.
-   Precisa vir depois das regras base de .chat/.dj-booth no arquivo pra
-   realmente vencer a cascata quando a media query bate. */
-@media (min-width: 860px) {
-  .dj-booth {
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-  .chat {
-    flex: 1 1 auto;
-    min-height: 260px;
-    /* Lado a lado a altura já é travada pelo esticamento da coluna
-       (sempre igual à altura do player + fila de DJs), então não precisa
-       de teto — isso é só pra proteção do modo empilhado, sem coluna
-       irmã pra travar a altura. */
-    max-height: none;
-  }
 }

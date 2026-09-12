@@ -14,6 +14,16 @@ export default function Player({ currentTrack, isCurrentDj }) {
   const loadedVideoIdRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
 
+  // O player só é criado uma vez (guarda playerRef.current abaixo), então o
+  // onStateChange precisa ler isCurrentDj de uma ref sempre atualizada — se
+  // ele fechasse sobre a prop diretamente, ficaria travado no valor de
+  // quando o player foi criado (ex: alguém que entra como ouvinte e só
+  // depois vira DJ nunca dispararia "track:ended").
+  const isCurrentDjRef = useRef(isCurrentDj);
+  useEffect(() => {
+    isCurrentDjRef.current = isCurrentDj;
+  }, [isCurrentDj]);
+
   // Cria o player uma vez que a API estiver disponível.
   useEffect(() => {
     if (!YT || playerRef.current) return;
@@ -24,13 +34,13 @@ export default function Player({ currentTrack, isCurrentDj }) {
       events: {
         onReady: () => setIsReady(true),
         onStateChange: (event) => {
-          if (event.data === YT.PlayerState.ENDED && isCurrentDj) {
+          if (event.data === YT.PlayerState.ENDED && isCurrentDjRef.current) {
             socket.emit("track:ended");
           }
         },
       },
     });
-  }, [YT, isCurrentDj]);
+  }, [YT]);
 
   // Sincroniza o vídeo/posição sempre que a faixa atual muda (ou assim que o
   // player fica pronto, caso a faixa já estivesse tocando quando entramos).

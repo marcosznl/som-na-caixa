@@ -10,7 +10,7 @@ const SYSTEM_META = {
 };
 const DEFAULT_SYSTEM_META = { icon: "ℹ️", color: "#868e96" };
 
-export default function Chat({ messages }) {
+export default function Chat({ messages, height }) {
   const [text, setText] = useState("");
   const listRef = useRef(null);
 
@@ -26,8 +26,15 @@ export default function Chat({ messages }) {
     setText("");
   }
 
+  // Fica sempre do mesmo tamanho do player de vídeo (medido em Room.jsx),
+  // com rolagem interna pro que não couber — em vez de esticar até o
+  // tamanho da coluna inteira (que incluiria a fila de DJs).
+  const style = height
+    ? { height: `${height}px`, maxHeight: "none", flexGrow: 0, flexShrink: 0 }
+    : undefined;
+
   return (
-    <div className="chat">
+    <div className="chat" style={style}>
       <h2>Chat</h2>
       <div className="chat__messages" ref={listRef}>
         {messages.map((message) => {
