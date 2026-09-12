@@ -703,20 +703,54 @@
 .icon-picker__trigger:hover {
   border-color: var(--accent-border);
 }
+.icon-picker__trigger-img,
+.chat__avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
 .icon-picker__panel {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
   z-index: 50;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding: 10px;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--bg);
   box-shadow: var(--shadow);
-  width: 176px;
+  width: 190px;
+}
+.icon-picker__upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  text-align: center;
+}
+.icon-picker__upload:hover {
+  border-color: var(--accent-border);
+  color: var(--text-h);
+}
+.icon-picker__error {
+  margin: 0;
+  font-size: 12px;
+  color: #e05c5c;
+}
+.icon-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
 }
 .icon-picker__option {
   width: 36px;

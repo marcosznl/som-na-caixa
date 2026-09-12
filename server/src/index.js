@@ -53,6 +53,15 @@ const AVAILABLE_ICONS = [
   "😀", "😎", "🤖", "🐱", "🐶", "🦊", "🐼", "🦄",
   "👾", "🎮", "🔥", "⚡", "🌟", "🍕", "⚽", "🎸",
 ];
+// Uma imagem enviada como ícone chega como data URI (já reduzida a uma
+// miniatura pequena no cliente); esse teto é só uma proteção extra contra
+// alguém mandar uma string enorme.
+const MAX_ICON_IMAGE_LENGTH = 60_000;
+
+function isValidIcon(icon) {
+  if (AVAILABLE_ICONS.includes(icon)) return true;
+  return typeof icon === "string" && icon.startsWith("data:image/") && icon.length <= MAX_ICON_IMAGE_LENGTH;
+}
 
 const app = express();
 app.use(cors({ origin: CLIENT_ORIGIN }));
@@ -216,7 +225,7 @@ io.on("connection", (socket) => {
       return;
     }
     const name = String(rawName || "").trim().slice(0, MAX_NAME_LENGTH) || `user-${nanoid(4)}`;
-    const validIcon = AVAILABLE_ICONS.includes(icon) ? icon : null;
+    const validIcon = isValidIcon(icon) ? icon : null;
     addUser(state, socket.id, name, validIcon);
     ack?.({ id: socket.id, name });
     broadcastState();
@@ -231,7 +240,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("user:setIcon", (icon) => {
-    if (!AVAILABLE_ICONS.includes(icon)) return;
+    if (!isValidIcon(icon)) return;
     if (setUserIcon(state, socket.id, icon)) {
       broadcastState();
     }
