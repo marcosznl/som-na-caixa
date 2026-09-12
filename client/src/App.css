@@ -210,6 +210,19 @@
   padding: 12px;
   margin-bottom: 12px;
 }
+.dj-booth__submit--alert {
+  animation: turn-alert-pulse 1s ease-in-out infinite;
+}
+@keyframes turn-alert-pulse {
+  0%, 100% {
+    border-color: var(--accent-border);
+    box-shadow: none;
+  }
+  50% {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-bg);
+  }
+}
 .dj-booth__submit p {
   margin-bottom: 8px;
   font-size: 14px;

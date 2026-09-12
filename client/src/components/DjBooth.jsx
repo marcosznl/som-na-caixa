@@ -25,7 +25,7 @@ export default function DjBooth({ booth, currentDjId, currentTrack, myId }) {
       </div>
 
       {isInBooth && (
-        <div className="dj-booth__submit">
+        <div className={`dj-booth__submit${needsFirstSong ? " dj-booth__submit--alert" : ""}`}>
           <p>
             {needsFirstSong
               ? "🎤 É a sua vez! Adicione uma música pra começar a tocar:"

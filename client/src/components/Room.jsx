@@ -14,6 +14,10 @@ export default function Room({ roomState, myId }) {
   const { users, booth, currentDjId, currentTrack, chatHistory, playHistory } = roomState;
   const isCurrentDj = currentDjId === myId;
   const me = users.find((user) => user.id === myId);
+  const myBoothEntry = booth.find((user) => user.id === myId);
+  // É a vez dela tocar, mas ainda não tem nada tocando nem música na fila
+  // própria — precisa escolher uma agora.
+  const needsFirstSong = isCurrentDj && !currentTrack && (myBoothEntry?.queue?.length ?? 0) === 0;
 
   // Mede a altura real do player pra o chat ficar do mesmo tamanho (em vez
   // de esticar até o tamanho da coluna inteira, incluindo a fila de DJs).
@@ -30,13 +34,27 @@ export default function Room({ roomState, myId }) {
     return () => observer.disconnect();
   }, []);
 
-  // Título da aba mostra a música tocando, pra dar pra ver sem trocar de aba.
+  // Título da aba mostra a música tocando — ou, se é a sua vez e ninguém
+  // escolheu nada ainda, pisca um aviso, já que é fácil não perceber o
+  // painel se a aba estiver em segundo plano.
   useEffect(() => {
+    if (needsFirstSong) {
+      let show = true;
+      document.title = "🎤 Sua vez de tocar!";
+      const interval = setInterval(() => {
+        show = !show;
+        document.title = show ? "🎤 Sua vez de tocar!" : "plug.dj pessoal";
+      }, 800);
+      return () => clearInterval(interval);
+    }
     document.title = currentTrack ? `🎵 ${currentTrack.title}` : "plug.dj pessoal";
+  }, [needsFirstSong, currentTrack]);
+
+  useEffect(() => {
     return () => {
       document.title = "plug.dj pessoal";
     };
-  }, [currentTrack]);
+  }, []);
 
   // Brilho ambiente atrás do player na cor de quem está tocando agora.
   const ambientColor = currentTrack ? nameToColor(currentTrack.djName) : null;
