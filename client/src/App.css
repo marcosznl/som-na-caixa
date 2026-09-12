@@ -329,11 +329,23 @@
 .dj-booth__my-queue li {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   font-size: 13px;
+  border-radius: 6px;
+  padding: 2px 4px;
+}
+.dj-booth__my-queue li.is-drag-over {
+  background: var(--accent-bg);
+  outline: 1px dashed var(--accent-border);
+}
+.dj-booth__my-queue-handle {
+  flex-shrink: 0;
+  cursor: grab;
+  color: var(--text);
 }
 .dj-booth__my-queue-title {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -462,4 +474,17 @@
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text-h);
+}
+
+.reconnect-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  text-align: center;
+  padding: 6px 12px;
+  font-size: 13px;
+  background: #f59f00;
+  color: #1a1a1a;
 }

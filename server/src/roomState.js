@@ -81,6 +81,28 @@ export function removeFromQueue(state, socketId, index) {
   return true;
 }
 
+// Move uma música de posição dentro da fila pessoal (arrastar e soltar).
+// Retorna false se os índices forem inválidos.
+export function reorderQueue(state, socketId, fromIndex, toIndex) {
+  const user = state.users.get(socketId);
+  if (!user) return false;
+  const { queue } = user;
+  if (
+    !Number.isInteger(fromIndex) ||
+    !Number.isInteger(toIndex) ||
+    fromIndex < 0 ||
+    fromIndex >= queue.length ||
+    toIndex < 0 ||
+    toIndex >= queue.length ||
+    fromIndex === toIndex
+  ) {
+    return false;
+  }
+  const [moved] = queue.splice(fromIndex, 1);
+  queue.splice(toIndex, 0, moved);
+  return true;
+}
+
 // Tira a próxima música da fila pessoal de alguém (usado quando chega a vez
 // dela de tocar). Retorna null se a fila estiver vazia.
 export function popNextFromQueue(state, socketId) {

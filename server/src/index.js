@@ -15,13 +15,14 @@ import {
   advanceQueue,
   addToQueue,
   removeFromQueue,
+  reorderQueue,
   popNextFromQueue,
   getCurrentDjId,
   pushChatMessage,
   serializeState,
 } from "./roomState.js";
 import { extractYoutubeId } from "./youtube.js";
-import { searchYoutube } from "./youtubeSearch.js";
+import { searchYoutube, fetchVideoDuration } from "./youtubeSearch.js";
 
 // Busca o título do vídeo via oEmbed público do YouTube (sem precisar de API key).
 async function fetchYoutubeTitle(videoId) {
@@ -78,9 +79,50 @@ app.use(express.static(clientDistPath));
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: CLIENT_ORIGIN },
+  // Se a conexão cair por um instante (wifi falhando, celular trocando de
+  // rede) e voltar dentro desse prazo, o socket.io recupera o mesmo
+  // socket.id sozinho — combinado com o "atraso de saída" mais abaixo, a
+  // pessoa nem percebe que caiu.
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 2 * 60 * 1000,
+  },
 });
 
 const state = createRoomState();
+
+// Rede de segurança: se o cliente do DJ não avisar que a música acabou
+// (aba em segundo plano, travou, etc.), o servidor avança a fila sozinho
+// depois da duração real do vídeo (+ uma folga). Guarda o timer e a faixa
+// a que ele se refere, pra cancelar se a música mudar antes por outro motivo.
+let safetyTimeout = null;
+const SAFETY_GRACE_MS = 15 * 1000;
+const SAFETY_FALLBACK_MS = 15 * 60 * 1000; // se não der pra saber a duração
+
+function clearSafetyTimeout() {
+  if (safetyTimeout) {
+    clearTimeout(safetyTimeout);
+    safetyTimeout = null;
+  }
+}
+
+async function scheduleSafetyTimeout(track) {
+  const duration = await fetchVideoDuration(track.videoId, YOUTUBE_API_KEY);
+  // Enquanto buscava a duração a faixa pode ter mudado (pulada, etc.) — se
+  // não for mais a mesma, essa agenda já não faz sentido.
+  if (state.currentTrack !== track) return;
+  const timeoutMs = duration ? duration * 1000 + SAFETY_GRACE_MS : SAFETY_FALLBACK_MS;
+  safetyTimeout = setTimeout(() => {
+    if (state.currentTrack === track) {
+      moveToNextDj();
+    }
+  }, timeoutMs);
+}
+
+// Dá uma folga de alguns segundos antes de realmente tirar alguém que
+// desconectou — se for só uma queda rápida de rede, ela reconecta e nem
+// percebe que caiu (a fila/música dela continuam intactas nesse meio tempo).
+const pendingDisconnects = new Map(); // socketId -> timeout
+const DISCONNECT_GRACE_MS = 20 * 1000;
 
 function broadcastState() {
   io.emit("state:sync", serializeState(state));
@@ -90,20 +132,23 @@ function startTrackForCurrentDj(videoId, title) {
   const djId = getCurrentDjId(state);
   if (!djId) return;
   const dj = state.users.get(djId);
-  state.currentTrack = {
+  const track = {
     videoId,
     title: title || videoId,
     startedAt: Date.now(),
     djId,
     djName: dj?.name ?? "???",
   };
+  state.currentTrack = track;
   pushChatMessage(state, {
     id: nanoid(),
     system: true,
     kind: "track",
-    text: `${state.currentTrack.djName} está tocando: ${state.currentTrack.title}`,
+    text: `${track.djName} está tocando: ${track.title}`,
     at: Date.now(),
   });
+  clearSafetyTimeout();
+  scheduleSafetyTimeout(track);
 }
 
 // Se ninguém está tocando, puxa a próxima música da fila pessoal do DJ atual
@@ -122,6 +167,7 @@ function tryPlayNextIfIdle() {
 // Avança a cabine pro próximo DJ. Se ele já tiver músicas na fila pessoal,
 // toca automaticamente; senão, avisa que é a vez dele escolher uma.
 function moveToNextDj() {
+  clearSafetyTimeout();
   advanceQueue(state);
   if (tryPlayNextIfIdle()) return;
   broadcastState();
@@ -132,6 +178,18 @@ function moveToNextDj() {
 }
 
 io.on("connection", (socket) => {
+  // Reconectou a tempo (dentro da folga) depois de uma queda rápida: cancela
+  // a remoção que estava agendada e não precisa passar pelo user:join de novo
+  // — pro socket.io, é literalmente a mesma conexão de antes.
+  if (socket.recovered) {
+    const pending = pendingDisconnects.get(socket.id);
+    if (pending) {
+      clearTimeout(pending);
+      pendingDisconnects.delete(socket.id);
+    }
+    broadcastState();
+  }
+
   socket.on("user:join", ({ name: rawName, password } = {}, ack) => {
     if (ROOM_PASSWORD && password !== ROOM_PASSWORD) {
       ack?.({ error: "Senha da sala incorreta." });
@@ -213,6 +271,12 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("queue:reorder", ({ fromIndex, toIndex } = {}) => {
+    if (reorderQueue(state, socket.id, fromIndex, toIndex)) {
+      broadcastState();
+    }
+  });
+
   // Disparado pelo cliente do DJ atual quando o vídeo termina naturalmente.
   socket.on("track:ended", () => {
     if (getCurrentDjId(state) !== socket.id) return;
@@ -246,8 +310,13 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     const user = state.users.get(socket.id);
-    const { wasCurrentDj } = removeUser(state, socket.id);
-    if (user) {
+    if (!user) return;
+    // Não tira a pessoa na hora — dá uma folga curta pro caso de ser só uma
+    // queda de rede passageira e ela reconectar sozinha (ver connectionStateRecovery
+    // acima). Só remove de verdade se o tempo passar sem reconexão.
+    const timeoutHandle = setTimeout(() => {
+      pendingDisconnects.delete(socket.id);
+      const { wasCurrentDj } = removeUser(state, socket.id);
       pushChatMessage(state, {
         id: nanoid(),
         system: true,
@@ -255,12 +324,13 @@ io.on("connection", (socket) => {
         text: `${user.name} saiu da sala.`,
         at: Date.now(),
       });
-    }
-    if (wasCurrentDj) {
-      moveToNextDj();
-    } else {
-      broadcastState();
-    }
+      if (wasCurrentDj) {
+        moveToNextDj();
+      } else {
+        broadcastState();
+      }
+    }, DISCONNECT_GRACE_MS);
+    pendingDisconnects.set(socket.id, timeoutHandle);
   });
 });
 

@@ -1,5 +1,6 @@
 import { socket } from "../socket";
 import SongPicker from "./SongPicker";
+import MyQueueList from "./MyQueueList";
 import { nameToColor } from "../nameColor";
 
 export default function DjBooth({ booth, currentDjId, currentTrack, myId }) {
@@ -31,24 +32,7 @@ export default function DjBooth({ booth, currentDjId, currentTrack, myId }) {
           </p>
           <SongPicker />
 
-          {myQueue.length > 0 && (
-            <div className="dj-booth__my-queue">
-              <p className="dj-booth__my-queue-heading">Sua fila ({myQueue.length})</p>
-              <ol>
-                {myQueue.map((track, index) => (
-                  <li key={`${track.videoId}-${index}`}>
-                    <span className="dj-booth__my-queue-title">{track.title}</span>
-                    <button
-                      className="btn btn--ghost btn--small"
-                      onClick={() => socket.emit("queue:remove", index)}
-                    >
-                      Remover
-                    </button>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
+          {myQueue.length > 0 && <MyQueueList queue={myQueue} />}
         </div>
       )}
 

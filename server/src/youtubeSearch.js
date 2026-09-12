@@ -1,4 +1,5 @@
 const SEARCH_ENDPOINT = "https://www.googleapis.com/youtube/v3/search";
+const VIDEOS_ENDPOINT = "https://www.googleapis.com/youtube/v3/videos";
 const MAX_RESULTS = 8;
 
 // Busca vídeos no YouTube usando a API oficial (YouTube Data API v3).
@@ -41,4 +42,32 @@ export async function searchYoutube(query, apiKey) {
       channelTitle: item.snippet.channelTitle,
       thumbnail: item.snippet.thumbnails?.default?.url,
     }));
+}
+
+// Converte uma duração ISO 8601 (formato que o YouTube usa, ex: "PT3M33S")
+// em segundos.
+function parseIsoDuration(iso) {
+  const match = iso?.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return null;
+  const hours = Number(match[1] || 0);
+  const minutes = Number(match[2] || 0);
+  const seconds = Number(match[3] || 0);
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+// Busca a duração real do vídeo (em segundos), usada como rede de segurança
+// pra avançar a fila sozinho se o cliente do DJ não avisar que acabou.
+// Custa só 1 unidade de cota (bem mais barato que a busca, que custa 100) —
+// retorna null em qualquer falha, pra quem chamar decidir um valor padrão.
+export async function fetchVideoDuration(videoId, apiKey) {
+  if (!apiKey) return null;
+  try {
+    const params = new URLSearchParams({ part: "contentDetails", id: videoId, key: apiKey });
+    const res = await fetch(`${VIDEOS_ENDPOINT}?${params.toString()}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return parseIsoDuration(data.items?.[0]?.contentDetails?.duration) ?? null;
+  } catch {
+    return null;
+  }
 }
