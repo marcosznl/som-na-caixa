@@ -8,7 +8,6 @@ import ReactionBar from "./ReactionBar";
 import ReactionFloaters from "./ReactionFloaters";
 import ProgressBar from "./ProgressBar";
 import IconPicker from "./IconPicker";
-import { nameToColor } from "../nameColor";
 
 export default function Room({ roomState, myId }) {
   const { users, booth, currentDjId, currentTrack, chatHistory, playHistory } = roomState;
@@ -56,9 +55,6 @@ export default function Room({ roomState, myId }) {
     };
   }, []);
 
-  // Brilho ambiente atrás do player na cor de quem está tocando agora.
-  const ambientColor = currentTrack ? nameToColor(currentTrack.djName) : null;
-
   return (
     <div className="room">
       <header className="room__header">
@@ -71,11 +67,7 @@ export default function Room({ roomState, myId }) {
       </header>
       <div className="room__body">
         <main className="room__main">
-          <div
-            className="room__player-wrap"
-            ref={playerWrapRef}
-            style={{ "--ambient-color": ambientColor || "transparent" }}
-          >
+          <div className="room__player-wrap" ref={playerWrapRef}>
             <Player currentTrack={currentTrack} isCurrentDj={isCurrentDj} />
             <ReactionFloaters />
           </div>

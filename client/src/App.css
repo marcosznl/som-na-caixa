@@ -665,20 +665,8 @@
   transform: scale(1.15);
 }
 
-/* Brilho ambiente atrás do player, na cor de quem está tocando */
 .room__player-wrap {
   position: relative;
-}
-.room__player-wrap::before {
-  content: "";
-  position: absolute;
-  inset: -24px;
-  background: var(--ambient-color, transparent);
-  filter: blur(40px);
-  opacity: 0.35;
-  z-index: -1;
-  border-radius: 24px;
-  transition: background 0.6s ease;
 }
 
 /* Barra de progresso estilizada da música atual */
