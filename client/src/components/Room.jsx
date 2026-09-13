@@ -43,16 +43,16 @@ export default function Room({ roomState, myId }) {
       document.title = "🎤 Sua vez de tocar!";
       const interval = setInterval(() => {
         show = !show;
-        document.title = show ? "🎤 Sua vez de tocar!" : "plug.dj pessoal";
+        document.title = show ? "🎤 Sua vez de tocar!" : "plug.dj";
       }, 800);
       return () => clearInterval(interval);
     }
-    document.title = currentTrack ? `🎵 ${currentTrack.title}` : "plug.dj pessoal";
+    document.title = currentTrack ? `🎵 ${currentTrack.title}` : "plug.dj";
   }, [needsFirstSong, currentTrack]);
 
   useEffect(() => {
     return () => {
-      document.title = "plug.dj pessoal";
+      document.title = "plug.dj";
     };
   }, []);
 
@@ -62,7 +62,7 @@ export default function Room({ roomState, myId }) {
   return (
     <div className="room">
       <header className="room__header">
-        <h1>plug.dj pessoal 🎧</h1>
+        <h1>plug.dj 🎧</h1>
         <div className="room__header-right">
           <span className="room__user-count">{users.length} na sala</span>
           <IconPicker currentIcon={me?.icon} />
