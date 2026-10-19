@@ -331,6 +331,8 @@ function enterRoom(socket, room) {
   // ele junto com o resto do chat no snapshot.
   postSystem(room, "join", `${socket.data.name} entrou na sala.`);
   broadcastUsers(room);
+  // Mais gente ouvindo muda quantos votos são precisos pra pular.
+  if (room.state.currentTrack) io.to(room.id).emit("state:sync", serializeState(room.state));
   socket.join(room.id);
   sendSnapshot(socket, room);
 }

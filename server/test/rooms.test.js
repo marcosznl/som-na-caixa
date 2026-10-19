@@ -172,6 +172,12 @@ test("fila pessoal vai só pro dono; votos pulam a música", { timeout: TEST_TIM
   const finished = ouvinte1.last["history:sync"].find((entry) => entry.title === "Música 1");
   assert.equal(finished.up, 1);
 
+  // Quem já estava na sala vê o mínimo de votos subir quando alguém entra.
+  const ouvinte3 = await connect();
+  await call(ouvinte3, "room:join", { roomId, name: "Ouvinte 3" });
+  await call(await connect(), "room:join", { roomId, name: "Ouvinte 4" });
+  await waitFor(() => ouvinte1.last["state:sync"].currentTrack.skipNeeded === 2, "mínimo subir");
+
   // O DJ pula a própria música na hora.
   dj.socket.emit("track:skip");
   await waitFor(() => ouvinte1.last["state:sync"].currentTrack === null, "DJ pular");

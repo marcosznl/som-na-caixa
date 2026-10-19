@@ -96,7 +96,8 @@ export default function Lobby({
 
         <h2 className="lobby__heading">Salas abertas</h2>
         <ul className="lobby__list">
-          {rooms.length === 0 && (
+          {!roomsLoaded && <li className="lobby__empty">Carregando salas…</li>}
+          {roomsLoaded && rooms.length === 0 && (
             <li className="lobby__empty">Nenhuma sala aberta ainda. Crie a primeira.</li>
           )}
           {rooms.map((room) => (
