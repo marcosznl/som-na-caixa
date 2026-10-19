@@ -380,5 +380,5 @@ io.on("connection", (socket) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`plug.dj-pessoal server rodando em http://localhost:${PORT}`);
+  console.log(`Som na Caixa server rodando em http://localhost:${PORT}`);
 });

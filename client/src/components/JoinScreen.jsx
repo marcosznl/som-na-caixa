@@ -16,7 +16,7 @@ export default function JoinScreen({ onJoin, error }) {
     <div className="join-screen">
       <ThemeToggle />
       <form className="join-screen__card" onSubmit={handleSubmit}>
-        <h1>Plug.DJ 🎧</h1>
+        <h1>Som na Caixa 🎧</h1>
         <p>Escolha um nome para entrar na sala.</p>
         <input
           autoFocus

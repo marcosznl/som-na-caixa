@@ -1,4 +1,4 @@
-# plug.dj pessoal 🎧
+# Som na Caixa 🎧
 
 Recriação simplificada do plug.dj para uso pessoal: uma sala única onde
 qualquer pessoa pode entrar na fila de DJs, tocar músicas do YouTube em

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "plugdj-theme";
+const STORAGE_KEY = "somnacaixa-theme";
 
 function getStoredTheme() {
   const saved = localStorage.getItem(STORAGE_KEY);

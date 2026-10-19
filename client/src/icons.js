@@ -5,7 +5,7 @@ export const AVAILABLE_ICONS = [
   "👾", "🎮", "🔥", "⚡", "🌟", "🍕", "⚽", "🎸",
 ];
 
-const STORAGE_KEY = "plugdj-icon";
+const STORAGE_KEY = "somnacaixa-icon";
 
 export function getStoredIcon() {
   try {
