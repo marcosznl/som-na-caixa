@@ -61,14 +61,8 @@ const AVAILABLE_ICONS = [
   "😀", "😎", "🤖", "🐱", "🐶", "🦊", "🐼", "🦄",
   "👾", "🎮", "🔥", "⚡", "🌟", "🍕", "⚽", "🎸",
 ];
-// Uma imagem enviada como ícone chega como data URI (já reduzida a uma
-// miniatura pequena no cliente); esse teto é só uma proteção extra contra
-// alguém mandar uma string enorme.
-const MAX_ICON_IMAGE_LENGTH = 60_000;
-
 function isValidIcon(icon) {
-  if (AVAILABLE_ICONS.includes(icon)) return true;
-  return typeof icon === "string" && icon.startsWith("data:image/") && icon.length <= MAX_ICON_IMAGE_LENGTH;
+  return AVAILABLE_ICONS.includes(icon);
 }
 
 const app = express();
@@ -189,8 +183,8 @@ function broadcastLobby() {
 }
 
 // O estado da sala vai em pedaços, cada um só quando muda: assim uma
-// mensagem de chat não reenvia a sala inteira (com ícones em imagem, filas e
-// histórico) pra todo mundo.
+// mensagem de chat não reenvia a sala inteira (com ícones, filas e histórico)
+// pra todo mundo.
 // - state:sync    cabine, música atual e votos
 // - users:sync    quem está na sala, com os ícones
 // - chat:sync     chat inteiro (ao entrar); depois só chat:new, uma por vez

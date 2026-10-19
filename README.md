@@ -28,7 +28,7 @@ quando a última pessoa sai, e todas somem quando o servidor reinicia.
 - **Chat e reações:** mensagens com cor e avatar por pessoa, avisos de quem
   entrou, saiu ou começou a tocar, e emojis que flutuam sobre o vídeo.
 - **Histórico:** as últimas 50 músicas que tocaram na sala.
-- **Personalização:** ícone de perfil (emoji ou imagem enviada) e tema
+- **Personalização:** ícone de perfil (um emoji) e tema
   claro ou escuro. Nome, ícone e tema ficam salvos no navegador.
 - **Quedas de conexão:** se a internet cair por até 20 segundos, a pessoa
   volta pra sala sem perder o lugar na fila.

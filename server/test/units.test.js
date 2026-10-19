@@ -99,12 +99,12 @@ test("votos: curti e não curti se excluem, clicar de novo desfaz, DJ não vota"
 
 test("estado público não expõe ícones nem o conteúdo das filas", () => {
   const state = createRoomState();
-  addUser(state, "a", "Ana", "data:image/png;base64,AAAA");
+  addUser(state, "a", "Ana", "🦊");
   joinBooth(state, "a");
   addToQueue(state, "a", { videoId: "dQw4w9WgXcQ", title: "música" });
   const publicState = serializeState(state);
   assert.deepEqual(publicState.booth, [{ id: "a", name: "Ana", queueLength: 1 }]);
-  assert.equal(JSON.stringify(publicState).includes("data:image"), false);
+  assert.equal(JSON.stringify(publicState).includes("🦊"), false);
   assert.equal(JSON.stringify(publicState).includes("música"), false);
 });
 

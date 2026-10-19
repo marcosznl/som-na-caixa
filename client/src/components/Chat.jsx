@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { socket } from "../socket";
 import { nameToColor, initialOf } from "../nameColor";
-import { isImageIcon } from "../icons";
 
 const SYSTEM_META = {
   join: { icon: "🚪", color: "#37b24d" },
@@ -72,15 +71,7 @@ export default function Chat({ messages, height, users }) {
           return (
             <div key={message.id} className="chat__message">
               <span className="chat__avatar" style={{ background: icon ? "transparent" : color }}>
-                {icon ? (
-                  isImageIcon(icon) ? (
-                    <img className="chat__avatar-img" src={icon} alt="" />
-                  ) : (
-                    icon
-                  )
-                ) : (
-                  initialOf(message.author)
-                )}
+                {icon || initialOf(message.author)}
               </span>
               <span className="chat__bubble" style={{ "--msg-color": color }}>
                 <span className="chat__time chat__time--corner">{formatTime(message.at)}</span>

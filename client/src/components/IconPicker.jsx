@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { socket } from "../socket";
-import { AVAILABLE_ICONS, storeIcon, isImageIcon, fileToIconDataUrl } from "../icons";
+import { AVAILABLE_ICONS, storeIcon } from "../icons";
 
 export default function IconPicker({ currentIcon }) {
   const [open, setOpen] = useState(false);
-  const [error, setError] = useState("");
   const wrapRef = useRef(null);
-  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
@@ -22,20 +20,7 @@ export default function IconPicker({ currentIcon }) {
   function pick(icon) {
     socket.emit("user:setIcon", icon);
     storeIcon(icon);
-    setError("");
     setOpen(false);
-  }
-
-  async function handleFileChange(event) {
-    const file = event.target.files?.[0];
-    event.target.value = ""; // permite escolher o mesmo arquivo de novo depois
-    if (!file) return;
-    try {
-      const dataUrl = await fileToIconDataUrl(file);
-      pick(dataUrl);
-    } catch (err) {
-      setError(err.message);
-    }
   }
 
   return (
@@ -46,29 +31,10 @@ export default function IconPicker({ currentIcon }) {
         title="Escolher seu ícone"
         aria-label="Escolher seu ícone"
       >
-        {currentIcon ? (
-          isImageIcon(currentIcon) ? (
-            <img className="icon-picker__trigger-img" src={currentIcon} alt="" />
-          ) : (
-            currentIcon
-          )
-        ) : (
-          "🙂"
-        )}
+        {currentIcon || "🙂"}
       </button>
       {open && (
         <div className="icon-picker__panel">
-          <label className="icon-picker__upload">
-            📷 Enviar uma imagem
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={handleFileChange}
-            />
-          </label>
-          {error && <p className="icon-picker__error">{error}</p>}
           <div className="icon-picker__grid">
             {AVAILABLE_ICONS.map((icon) => (
               <button

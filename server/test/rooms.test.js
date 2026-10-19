@@ -187,3 +187,19 @@ test("busca tem limite por IP", { timeout: TEST_TIMEOUT_MS }, async () => {
   assert.equal(statuses.filter((status) => status === 502).length, 10);
   assert.equal(statuses[10], 429);
 });
+
+test("ícone aceita só os emojis da lista, não imagem", { timeout: TEST_TIMEOUT_MS }, async () => {
+  const ana = await connect();
+  await call(ana, "room:create", {
+    roomName: uniqueRoomName(),
+    name: "Ana",
+    icon: "data:image/png;base64,AAAA",
+  });
+  assert.equal(ana.last["users:sync"][0].icon, null);
+  ana.socket.emit("user:setIcon", "🦊");
+  await waitFor(() => ana.last["users:sync"][0].icon === "🦊", "trocar ícone");
+  ana.socket.emit("user:setIcon", "data:image/png;base64,AAAA");
+  ana.socket.emit("chat:message", "depois");
+  await waitFor(() => ana.chat.some((message) => message.text === "depois"), "mensagem");
+  assert.equal(ana.last["users:sync"][0].icon, "🦊");
+});
