@@ -25,7 +25,7 @@ export default function JoinScreen({ onJoin, error }) {
           onChange={(event) => setName(event.target.value)}
         />
         {error && <p className="join-screen__error">{error}</p>}
-        <button type="submit" disabled={!name.trim()}>
+        <button type="submit" className="btn btn--primary join-screen__submit" disabled={!name.trim()}>
           Continuar
         </button>
       </form>
