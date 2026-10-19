@@ -164,6 +164,9 @@
   color: var(--text);
   font-size: 14px;
 }
+.room__user-count-icon {
+  display: none;
+}
 .theme-toggle {
   position: relative;
   width: 52px;
@@ -841,4 +844,125 @@
 .icon-picker__option.is-selected {
   background: var(--accent-bg);
   border-color: var(--accent-border);
+}
+
+/* Convite por link (página inicial) */
+.lobby__invite {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--accent-border);
+  border-radius: 10px;
+  background: var(--accent-bg);
+}
+.join-screen__card .lobby__invite p {
+  margin: 0;
+  color: var(--text-h);
+}
+
+/* Votos e reações da música atual */
+.room__track-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.vote-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.vote-bar__btn {
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+.vote-bar__btn:hover:not(:disabled) {
+  border-color: var(--accent-border);
+}
+.vote-bar__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.vote-bar__btn.is-active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+}
+.vote-bar__btn span {
+  font-variant-numeric: tabular-nums;
+}
+
+.chat__error {
+  color: #e05c5c;
+  font-size: 13px;
+  margin: 0 0 8px;
+}
+
+/* Celular e telas estreitas */
+@media (max-width: 720px) {
+  .join-screen {
+    padding: 64px 16px 24px;
+    align-items: flex-start;
+  }
+  .room__header {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+  .room__header-left {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+  .room__header h1 {
+    font-size: 18px;
+  }
+  .room__header-right {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .room__user-count-icon {
+    display: inline;
+  }
+  .room__user-count-label {
+    display: none;
+  }
+  .room__body {
+    padding: 12px 16px;
+    gap: 16px;
+  }
+  .room__main,
+  .room__sidebar {
+    flex-basis: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+  /* No celular o player fica baixinho; o chat não precisa acompanhar a
+     altura dele (o valor vem por estilo inline, medido em Room.jsx). */
+  .room__sidebar .chat {
+    height: 360px !important;
+  }
+  .song-picker__form,
+  .lobby__create {
+    flex-wrap: wrap;
+  }
+  .song-picker__form input,
+  .lobby__create input {
+    flex-basis: 100%;
+  }
+  .song-picker__form .btn,
+  .lobby__create .btn {
+    flex: 1;
+  }
+  .btn--ghost {
+    margin-left: 0;
+  }
 }

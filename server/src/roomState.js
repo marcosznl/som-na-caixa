@@ -13,9 +13,9 @@ export function createRoomState() {
     users: new Map(), // socketId -> { id, name, queue: [{videoId, title}] }
     booth: [], // array de socketId, ordem da fila de DJs
     currentDjIndex: -1, // índice em `booth` de quem está tocando agora
-    currentTrack: null, // { videoId, title, startedAt, djId, djName }
+    currentTrack: null, // { videoId, title, startedAt, djId, djName, historyId, up, down, skip }
     chatHistory: [], // { id, author, text, at }
-    playHistory: [], // { id, videoId, title, djName, startedAt }, mais recente primeiro
+    playHistory: [], // { id, videoId, title, djName, startedAt, up, down }, mais recente primeiro
   };
 }
 
@@ -34,6 +34,7 @@ export function setUserIcon(state, socketId, icon) {
 
 export function removeUser(state, socketId) {
   state.users.delete(socketId);
+  removeVotesOf(state, socketId);
   const boothIndex = state.booth.indexOf(socketId);
   const wasCurrentDj = boothIndex !== -1 && boothIndex === state.currentDjIndex;
 
@@ -156,15 +157,86 @@ export function pushPlayHistory(state, entry) {
   }
 }
 
-// Serializa o estado pro cliente (troca socketId por nomes onde faz sentido).
+// Votos da música atual. "up"/"down" são o curti/não curti (só informativos,
+// ficam no histórico); "skip" é o voto pra pular. Cada lista guarda ids de
+// conexão, então uma pessoa conta uma vez só. O DJ não vota na própria música.
+export function toggleVote(state, socketId, kind) {
+  const track = state.currentTrack;
+  if (!track || track.djId === socketId || !state.users.has(socketId)) return false;
+  if (kind === "skip") {
+    track.skip = track.skip.includes(socketId)
+      ? track.skip.filter((id) => id !== socketId)
+      : [...track.skip, socketId];
+    return true;
+  }
+  if (kind !== "up" && kind !== "down") return false;
+  const alreadyThere = track[kind].includes(socketId);
+  track.up = track.up.filter((id) => id !== socketId);
+  track.down = track.down.filter((id) => id !== socketId);
+  if (!alreadyThere) track[kind] = [...track[kind], socketId];
+  return true;
+}
+
+function removeVotesOf(state, socketId) {
+  const track = state.currentTrack;
+  if (!track) return;
+  track.up = track.up.filter((id) => id !== socketId);
+  track.down = track.down.filter((id) => id !== socketId);
+  track.skip = track.skip.filter((id) => id !== socketId);
+}
+
+// Metade de quem está ouvindo (todo mundo menos o DJ), arredondando pra cima.
+export function skipVotesNeeded(state) {
+  const listeners = Math.max(0, state.users.size - 1);
+  return Math.max(1, Math.ceil(listeners / 2));
+}
+
+export function shouldSkip(state) {
+  const track = state.currentTrack;
+  return Boolean(track) && track.skip.length >= skipVotesNeeded(state);
+}
+
+// Copia o placar de curti/não curti da música atual pra entrada dela no
+// histórico. Retorna true se encontrou a entrada.
+export function syncHistoryVotes(state) {
+  const track = state.currentTrack;
+  if (!track) return false;
+  const entry = state.playHistory.find((item) => item.id === track.historyId);
+  if (!entry) return false;
+  entry.up = track.up.length;
+  entry.down = track.down.length;
+  return true;
+}
+
+// O que todo mundo da sala precisa ver. Ficam de fora o chat e o histórico
+// (mandados à parte, só quando mudam), os ícones (mandados com a lista de
+// pessoas) e o conteúdo das filas pessoais (só o dono recebe o dele).
 export function serializeState(state) {
   const currentDjId = getCurrentDjId(state);
+  const track = state.currentTrack;
   return {
-    users: Array.from(state.users.values()),
-    booth: state.booth.map((id) => state.users.get(id)).filter(Boolean),
+    booth: state.booth
+      .map((id) => state.users.get(id))
+      .filter(Boolean)
+      .map((user) => ({ id: user.id, name: user.name, queueLength: user.queue.length })),
     currentDjId,
-    currentTrack: state.currentTrack,
-    chatHistory: state.chatHistory,
-    playHistory: state.playHistory,
+    currentTrack: track
+      ? {
+          videoId: track.videoId,
+          title: track.title,
+          startedAt: track.startedAt,
+          duration: track.duration,
+          djId: track.djId,
+          djName: track.djName,
+          up: track.up,
+          down: track.down,
+          skip: track.skip,
+          skipNeeded: skipVotesNeeded(state),
+        }
+      : null,
   };
+}
+
+export function serializeUsers(state) {
+  return Array.from(state.users.values()).map(({ id, name, icon }) => ({ id, name, icon }));
 }

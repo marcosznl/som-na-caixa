@@ -8,6 +8,7 @@ const SYSTEM_META = {
   leave: { icon: "👋", color: "#868e96" },
   dj: { icon: "🎧", color: "#7048e8" },
   track: { icon: "🎵", color: "#f08c00" },
+  skip: { icon: "⏭", color: "#e8590c" },
 };
 const DEFAULT_SYSTEM_META = { icon: "ℹ️", color: "#868e96" };
 
@@ -17,6 +18,7 @@ function formatTime(at) {
 
 export default function Chat({ messages, height, users }) {
   const [text, setText] = useState("");
+  const [error, setError] = useState("");
   const listRef = useRef(null);
 
   useEffect(() => {
@@ -27,7 +29,14 @@ export default function Chat({ messages, height, users }) {
     event.preventDefault();
     const trimmed = text.trim();
     if (!trimmed) return;
-    socket.emit("chat:message", trimmed);
+    setError("");
+    socket.emit("chat:message", trimmed, (response) => {
+      if (response?.error) {
+        // Não chegou a ser enviada: devolve o texto pro campo.
+        setError(response.error);
+        setText((current) => current || trimmed);
+      }
+    });
     setText("");
   }
 
@@ -84,6 +93,7 @@ export default function Chat({ messages, height, users }) {
           );
         })}
       </div>
+      {error && <p className="chat__error">{error}</p>}
       <form className="chat__form" onSubmit={handleSubmit}>
         <input
           maxLength={300}

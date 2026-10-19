@@ -8,15 +8,17 @@ import ReactionBar from "./ReactionBar";
 import ReactionFloaters from "./ReactionFloaters";
 import ProgressBar from "./ProgressBar";
 import IconPicker from "./IconPicker";
+import VoteBar from "./VoteBar";
+import InviteButton from "./InviteButton";
 
 export default function Room({ roomState, myId, onLeave }) {
-  const { users, booth, currentDjId, currentTrack, chatHistory, playHistory, roomName } = roomState;
+  const { users, booth, currentDjId, currentTrack, chatHistory, playHistory, roomName, myQueue } =
+    roomState;
   const isCurrentDj = currentDjId === myId;
   const me = users.find((user) => user.id === myId);
-  const myBoothEntry = booth.find((user) => user.id === myId);
   // É a vez dela tocar, mas ainda não tem nada tocando nem música na fila
   // própria — precisa escolher uma agora.
-  const needsFirstSong = isCurrentDj && !currentTrack && (myBoothEntry?.queue?.length ?? 0) === 0;
+  const needsFirstSong = isCurrentDj && !currentTrack && myQueue.length === 0;
 
   // Mede a altura real do player pra o chat ficar do mesmo tamanho (em vez
   // de esticar até o tamanho da coluna inteira, incluindo a fila de DJs).
@@ -63,10 +65,15 @@ export default function Room({ roomState, myId, onLeave }) {
           {roomName && <span className="room__name">{roomName}</span>}
         </div>
         <div className="room__header-right">
+          <InviteButton />
           <button className="btn btn--small" onClick={onLeave}>
             Trocar de sala
           </button>
-          <span className="room__user-count">{users.length} na sala</span>
+          <span className="room__user-count" title={`${users.length} na sala`}>
+            <span className="room__user-count-icon">👥 </span>
+            {users.length}
+            <span className="room__user-count-label"> na sala</span>
+          </span>
           <IconPicker currentIcon={me?.icon} />
           <ThemeToggle />
         </div>
@@ -78,8 +85,17 @@ export default function Room({ roomState, myId, onLeave }) {
             <ReactionFloaters />
           </div>
           <ProgressBar currentTrack={currentTrack} />
-          <ReactionBar />
-          <DjBooth booth={booth} currentDjId={currentDjId} currentTrack={currentTrack} myId={myId} />
+          <div className="room__track-actions">
+            {currentTrack && <VoteBar currentTrack={currentTrack} myId={myId} />}
+            <ReactionBar />
+          </div>
+          <DjBooth
+            booth={booth}
+            currentDjId={currentDjId}
+            currentTrack={currentTrack}
+            myId={myId}
+            myQueue={myQueue}
+          />
         </main>
         <aside className="room__sidebar">
           <Chat messages={chatHistory} height={playerHeight} users={users} />

@@ -4,11 +4,22 @@ import ThemeToggle from "./ThemeToggle";
 // Página inicial: escolhe o nome e, na mesma tela, cria uma sala nova ou
 // entra numa que já existe. As salas vivem só em memória no servidor e somem
 // quando a última pessoa sai.
-export default function Lobby({ name, onNameChange, rooms, notice, onCreate, onJoin }) {
+export default function Lobby({
+  name,
+  onNameChange,
+  rooms,
+  roomsLoaded,
+  inviteRoomId,
+  onDismissInvite,
+  notice,
+  onCreate,
+  onJoin,
+}) {
   const [newRoomName, setNewRoomName] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const hasName = Boolean(name.trim());
+  const invitedRoom = inviteRoomId ? rooms.find((room) => room.id === inviteRoomId) : null;
 
   async function run(action) {
     setBusy(true);
@@ -39,6 +50,32 @@ export default function Lobby({ name, onNameChange, rooms, notice, onCreate, onJ
           value={name}
           onChange={(event) => onNameChange(event.target.value)}
         />
+
+        {inviteRoomId && roomsLoaded && (
+          <div className="lobby__invite">
+            {invitedRoom ? (
+              <>
+                <p>
+                  Você foi convidado pra sala <strong>{invitedRoom.name}</strong>.
+                </p>
+                <button
+                  className="btn btn--primary"
+                  disabled={busy || !hasName}
+                  onClick={() => run(() => onJoin(invitedRoom.id))}
+                >
+                  {hasName ? "Entrar na sala" : "Escolha um nome pra entrar"}
+                </button>
+              </>
+            ) : (
+              <>
+                <p>A sala do convite não existe mais. Ela fecha quando todo mundo sai.</p>
+                <button className="btn" onClick={onDismissInvite}>
+                  Ver as outras salas
+                </button>
+              </>
+            )}
+          </div>
+        )}
 
         <form className="lobby__create" onSubmit={handleCreate}>
           <input

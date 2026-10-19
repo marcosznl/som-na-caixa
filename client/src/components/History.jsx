@@ -20,6 +20,12 @@ export default function History({ history }) {
               <span className="history__title">{entry.title}</span>
               <span className="history__dj">
                 DJ <span style={{ color: nameToColor(entry.djName) }}>{entry.djName}</span>
+                {(entry.up > 0 || entry.down > 0) && (
+                  <span className="history__votes">
+                    {" "}
+                    · 👍 {entry.up} 👎 {entry.down}
+                  </span>
+                )}
               </span>
             </span>
           </li>

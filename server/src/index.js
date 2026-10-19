@@ -21,10 +21,15 @@ import {
   getCurrentDjId,
   pushChatMessage,
   pushPlayHistory,
+  toggleVote,
+  shouldSkip,
+  syncHistoryVotes,
   serializeState,
+  serializeUsers,
 } from "./roomState.js";
 import { extractYoutubeId } from "./youtube.js";
 import { searchYoutube, fetchVideoDuration } from "./youtubeSearch.js";
+import { takeToken, createIpLimiter } from "./rateLimit.js";
 
 // Busca o título do vídeo via oEmbed público do YouTube (sem precisar de API key).
 async function fetchYoutubeTitle(videoId) {
@@ -48,6 +53,9 @@ const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const MAX_NAME_LENGTH = 24;
 const MAX_ROOM_NAME_LENGTH = 40;
 const MAX_CHAT_LENGTH = 300;
+// Teto de salas abertas ao mesmo tempo, contra alguém criando salas sem parar.
+const MAX_ROOMS = 100;
+const TOO_FAST = "Calma, você está fazendo isso rápido demais. Espere alguns segundos.";
 const ALLOWED_REACTIONS = ["🔥", "💃", "👍", "😂", "❤️"];
 const AVAILABLE_ICONS = [
   "😀", "😎", "🤖", "🐱", "🐶", "🦊", "🐼", "🦄",
@@ -64,16 +72,29 @@ function isValidIcon(icon) {
 }
 
 const app = express();
+// No Render o app fica atrás de proxies: sem isso, todo mundo pareceria ter
+// o mesmo IP e o limite de busca valeria pro site inteiro. O Render põe o IP
+// real como primeiro da lista X-Forwarded-For, que é o que `true` usa. Esse
+// primeiro valor pode ser forjado, mas aí o pior caso é alguém escapar do
+// limite, e não o site inteiro ficar limitado.
+app.set("trust proxy", true);
 app.use(cors({ origin: CLIENT_ORIGIN }));
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
-// Sem limite artificial aqui — quando a cota real do Google acabar, a busca
-// simplesmente falha com o motivo devolvido por eles (ver youtubeSearch.js),
-// e ainda dá pra colar o link direto no mesmo campo enquanto isso.
+// A cota do YouTube é compartilhada pelo site inteiro, então cada IP tem um
+// limite de buscas (buscas repetidas vêm do cache e não gastam cota). Quando
+// a cota real do Google acabar, a busca falha com o motivo devolvido por eles
+// (ver youtubeSearch.js), e ainda dá pra colar o link direto no mesmo campo.
+const allowSearch = createIpLimiter("search");
+
 app.get("/api/search", async (req, res) => {
-  const query = String(req.query.q || "").trim();
+  const query = String(req.query.q || "").trim().slice(0, 200);
   if (!query) {
     res.status(400).json({ error: "Parâmetro 'q' é obrigatório." });
+    return;
+  }
+  if (!allowSearch(req.ip)) {
+    res.status(429).json({ error: TOO_FAST });
     return;
   }
   try {
@@ -110,8 +131,8 @@ const io = new Server(server, {
 const rooms = new Map(); // roomId -> { id, name, state, safetyTimeout }
 const socketRooms = new Map(); // socketId -> roomId (em qual sala cada um está)
 
-// Quem já escolheu um nome mas ainda não entrou em nenhuma sala fica nesse
-// canal do socket.io, recebendo a lista de salas atualizada.
+// Quem está na página inicial (fora de qualquer sala) fica nesse canal do
+// socket.io, recebendo a lista de salas atualizada.
 const LOBBY_CHANNEL = "lobby";
 
 // Rede de segurança: se o cliente do DJ não avisar que a música acabou
@@ -167,11 +188,54 @@ function broadcastLobby() {
   io.to(LOBBY_CHANNEL).emit("lobby:sync", listRooms());
 }
 
-// Toda mudança numa sala também pode mudar o que aparece na lista de salas
-// (quantas pessoas, o que está tocando), então já atualiza as duas coisas.
+// O estado da sala vai em pedaços, cada um só quando muda: assim uma
+// mensagem de chat não reenvia a sala inteira (com ícones em imagem, filas e
+// histórico) pra todo mundo.
+// - state:sync    cabine, música atual e votos
+// - users:sync    quem está na sala, com os ícones
+// - chat:sync     chat inteiro (ao entrar); depois só chat:new, uma por vez
+// - history:sync  músicas que já tocaram
+// - queue:sync    a fila pessoal, só pro dono
+// Mudanças no estado e nas pessoas também mudam a lista de salas (quantas
+// pessoas, o que está tocando), então já atualizam a página inicial.
 function broadcastState(room) {
-  io.to(room.id).emit("state:sync", { ...serializeState(room.state), roomName: room.name });
+  io.to(room.id).emit("state:sync", serializeState(room.state));
   broadcastLobby();
+}
+
+function broadcastUsers(room) {
+  io.to(room.id).emit("users:sync", serializeUsers(room.state));
+  broadcastLobby();
+}
+
+function broadcastHistory(room) {
+  io.to(room.id).emit("history:sync", room.state.playHistory);
+}
+
+function sendQueue(room, socketId) {
+  const user = room.state.users.get(socketId);
+  if (user) io.to(socketId).emit("queue:sync", user.queue);
+}
+
+function postChat(room, message) {
+  const full = { id: nanoid(), at: Date.now(), ...message };
+  pushChatMessage(room.state, full);
+  io.to(room.id).emit("chat:new", full);
+}
+
+function postSystem(room, kind, text) {
+  postChat(room, { system: true, kind, text });
+}
+
+// Tudo de uma vez pra quem acabou de entrar (ou voltou de uma queda e pode
+// ter perdido alguma atualização).
+function sendSnapshot(socket, room) {
+  socket.emit("room:entered", { roomId: room.id, roomName: room.name });
+  socket.emit("users:sync", serializeUsers(room.state));
+  socket.emit("chat:sync", room.state.chatHistory);
+  socket.emit("history:sync", room.state.playHistory);
+  socket.emit("state:sync", serializeState(room.state));
+  sendQueue(room, socket.id);
 }
 
 function getRoomOf(socketId) {
@@ -184,28 +248,30 @@ function startTrackForCurrentDj(room, videoId, title) {
   const djId = getCurrentDjId(state);
   if (!djId) return;
   const dj = state.users.get(djId);
+  const historyId = nanoid();
   const track = {
     videoId,
     title: title || videoId,
     startedAt: Date.now(),
     djId,
     djName: dj?.name ?? "???",
+    historyId,
+    up: [],
+    down: [],
+    skip: [],
   };
   state.currentTrack = track;
-  pushChatMessage(state, {
-    id: nanoid(),
-    system: true,
-    kind: "track",
-    text: `${track.djName} está tocando: ${track.title}`,
-    at: Date.now(),
-  });
+  postSystem(room, "track", `${track.djName} está tocando: ${track.title}`);
   pushPlayHistory(state, {
-    id: nanoid(),
+    id: historyId,
     videoId: track.videoId,
     title: track.title,
     djName: track.djName,
     startedAt: track.startedAt,
+    up: 0,
+    down: 0,
   });
+  broadcastHistory(room);
   clearSafetyTimeout(room);
   scheduleSafetyTimeout(room, track);
 }
@@ -219,6 +285,7 @@ function tryPlayNextIfIdle(room) {
   if (!djId) return false;
   const track = popNextFromQueue(state, djId);
   if (!track) return false;
+  sendQueue(room, djId);
   startTrackForCurrentDj(room, track.videoId, track.title);
   broadcastState(room);
   return true;
@@ -228,6 +295,8 @@ function tryPlayNextIfIdle(room) {
 // toca automaticamente; senão, avisa que é a vez dele escolher uma.
 function moveToNextDj(room) {
   clearSafetyTimeout(room);
+  // Fecha o placar de curti/não curti da música que está saindo.
+  if (syncHistoryVotes(room.state)) broadcastHistory(room);
   advanceQueue(room.state);
   if (tryPlayNextIfIdle(room)) return;
   broadcastState(room);
@@ -237,21 +306,39 @@ function moveToNextDj(room) {
   }
 }
 
+// Depois de um voto pra pular (ou de alguém sair, o que diminui quantos votos
+// são precisos), confere se já deu pra pular.
+function skipIfVoted(room) {
+  if (!shouldSkip(room.state)) return false;
+  postSystem(room, "skip", `A sala votou e pulou: ${room.state.currentTrack.title}`);
+  moveToNextDj(room);
+  return true;
+}
+
+function cleanName(raw, max) {
+  return String(raw || "").trim().replace(/\s+/g, " ").slice(0, max);
+}
+
+function nameTakenInRoom(room, name, exceptSocketId) {
+  const lower = name.toLowerCase();
+  for (const user of room.state.users.values()) {
+    if (user.id !== exceptSocketId && user.name.toLowerCase() === lower) return true;
+  }
+  return false;
+}
+
 // Coloca a pessoa numa sala (saindo da anterior, se estava em alguma).
 function enterRoom(socket, room) {
   leaveCurrentRoom(socket.id);
   socket.leave(LOBBY_CHANNEL);
-  socket.join(room.id);
   socketRooms.set(socket.id, room.id);
   addUser(room.state, socket.id, socket.data.name, socket.data.icon);
-  pushChatMessage(room.state, {
-    id: nanoid(),
-    system: true,
-    kind: "join",
-    text: `${socket.data.name} entrou na sala.`,
-    at: Date.now(),
-  });
-  broadcastState(room);
+  // O aviso de entrada vai pra quem já estava na sala; quem entrou recebe
+  // ele junto com o resto do chat no snapshot.
+  postSystem(room, "join", `${socket.data.name} entrou na sala.`);
+  broadcastUsers(room);
+  socket.join(room.id);
+  sendSnapshot(socket, room);
 }
 
 // Tira a pessoa da sala em que ela está (se estiver em alguma). Se a sala
@@ -271,28 +358,19 @@ function leaveCurrentRoom(socketId) {
     return;
   }
 
-  pushChatMessage(room.state, {
-    id: nanoid(),
-    system: true,
-    kind: "leave",
-    text: `${user?.name ?? "Alguém"} saiu da sala.`,
-    at: Date.now(),
-  });
+  postSystem(room, "leave", `${user?.name ?? "Alguém"} saiu da sala.`);
+  broadcastUsers(room);
   if (wasCurrentDj) {
     moveToNextDj(room);
-  } else {
+  } else if (!skipIfVoted(room)) {
     broadcastState(room);
   }
 }
 
-// Guarda nome/ícone na conexão. Vai junto com o pedido de criar ou entrar
-// numa sala, já que a escolha do nome fica na mesma página da lista.
-function setIdentity(socket, rawName, icon) {
-  socket.data.name = String(rawName || "").trim().slice(0, MAX_NAME_LENGTH) || `user-${nanoid(4)}`;
-  socket.data.icon = isValidIcon(icon) ? icon : null;
-}
-
 io.on("connection", (socket) => {
+  socket.data.buckets = socket.data.buckets ?? {};
+  const allow = (action) => takeToken(socket.data.buckets, action);
+
   // Conexão nova: já entra na lista de salas, que aparece na página inicial
   // antes mesmo de a pessoa escolher um nome.
   if (!socket.recovered) {
@@ -311,14 +389,26 @@ io.on("connection", (socket) => {
     }
     const room = getRoomOf(socket.id);
     if (room) {
-      broadcastState(room);
+      sendSnapshot(socket, room);
     } else {
       socket.emit("lobby:sync", listRooms());
     }
   }
 
-  socket.on("room:create", ({ roomName, name: userName, icon } = {}, ack) => {
-    const name = String(roomName || "").trim().slice(0, MAX_ROOM_NAME_LENGTH);
+  // Nome e ícone vão junto com o pedido de criar ou entrar numa sala, já que
+  // a escolha do nome fica na mesma página da lista.
+  function setIdentity(name, icon) {
+    socket.data.name = name;
+    socket.data.icon = isValidIcon(icon) ? icon : null;
+  }
+
+  socket.on("room:create", ({ roomName, name: rawName, icon } = {}, ack) => {
+    const name = cleanName(roomName, MAX_ROOM_NAME_LENGTH);
+    const userName = cleanName(rawName, MAX_NAME_LENGTH);
+    if (!userName) {
+      ack?.({ error: "Escolha um nome antes de criar uma sala." });
+      return;
+    }
     if (!name) {
       ack?.({ error: "Dê um nome pra sala." });
       return;
@@ -330,27 +420,50 @@ io.on("connection", (socket) => {
       ack?.({ error: "Já existe uma sala com esse nome." });
       return;
     }
-    setIdentity(socket, userName, icon);
+    if (rooms.size >= MAX_ROOMS) {
+      ack?.({ error: "O limite de salas abertas foi atingido. Entre em uma das salas da lista." });
+      return;
+    }
+    if (!allow("roomCreate")) {
+      ack?.({ error: TOO_FAST });
+      return;
+    }
+    setIdentity(userName, icon);
     const room = { id: nanoid(8), name, state: createRoomState(), safetyTimeout: null };
     rooms.set(room.id, room);
     enterRoom(socket, room);
     ack?.({ roomId: room.id });
   });
 
-  socket.on("room:join", ({ roomId, name: userName, icon } = {}, ack) => {
-    const room = rooms.get(roomId);
-    if (!room) {
-      ack?.({ error: "Essa sala não existe mais." });
+  socket.on("room:join", ({ roomId, name: rawName, icon } = {}, ack) => {
+    const userName = cleanName(rawName, MAX_NAME_LENGTH);
+    if (!userName) {
+      ack?.({ error: "Escolha um nome antes de entrar numa sala." });
       return;
     }
-    setIdentity(socket, userName, icon);
-    if (getRoomOf(socket.id) !== room) {
-      enterRoom(socket, room);
+    const room = rooms.get(roomId);
+    if (!room) {
+      ack?.({ error: "Essa sala não existe mais. Ela fecha quando todo mundo sai." });
+      return;
     }
+    if (getRoomOf(socket.id) === room) {
+      ack?.({ roomId: room.id });
+      return;
+    }
+    if (nameTakenInRoom(room, userName, socket.id)) {
+      ack?.({ error: "Já tem alguém com esse nome nessa sala. Escolha outro." });
+      return;
+    }
+    if (!allow("roomJoin")) {
+      ack?.({ error: TOO_FAST });
+      return;
+    }
+    setIdentity(userName, icon);
+    enterRoom(socket, room);
     ack?.({ roomId: room.id });
   });
 
-  // Volta pra lista de salas.
+  // Volta pra página inicial.
   socket.on("room:leave", (ack) => {
     leaveCurrentRoom(socket.id);
     socket.join(LOBBY_CHANNEL);
@@ -358,11 +471,11 @@ io.on("connection", (socket) => {
   });
 
   socket.on("user:setIcon", (icon) => {
-    if (!isValidIcon(icon)) return;
+    if (!isValidIcon(icon) || !allow("icon")) return;
     socket.data.icon = icon;
     const room = getRoomOf(socket.id);
     if (room && setUserIcon(room.state, socket.id, icon)) {
-      broadcastState(room);
+      broadcastUsers(room);
     }
   });
 
@@ -374,13 +487,7 @@ io.on("connection", (socket) => {
     if (!user) return;
     const joined = joinBooth(state, socket.id);
     if (!joined) return;
-    pushChatMessage(state, {
-      id: nanoid(),
-      system: true,
-      kind: "dj",
-      text: `${user.name} entrou na fila de DJs.`,
-      at: Date.now(),
-    });
+    postSystem(room, "dj", `${user.name} entrou na fila de DJs.`);
     // Se ninguém estava tocando, esse pode virar o DJ da vez imediatamente.
     if (getCurrentDjId(state) === null) {
       moveToNextDj(room);
@@ -392,7 +499,9 @@ io.on("connection", (socket) => {
   socket.on("booth:leave", () => {
     const room = getRoomOf(socket.id);
     if (!room) return;
-    const { wasCurrentDj } = leaveBooth(room.state, socket.id);
+    const { removed, wasCurrentDj } = leaveBooth(room.state, socket.id);
+    if (!removed) return;
+    sendQueue(room, socket.id);
     if (wasCurrentDj) {
       moveToNextDj(room);
     } else {
@@ -410,14 +519,19 @@ io.on("connection", (socket) => {
       ack?.({ error: "Entre na fila de DJs antes de adicionar músicas." });
       return;
     }
-    const resolvedId = videoId || extractYoutubeId(url);
+    if (!allow("queueAdd")) {
+      ack?.({ error: TOO_FAST });
+      return;
+    }
+    const resolvedId = (typeof videoId === "string" && extractYoutubeId(videoId)) || extractYoutubeId(url);
     if (!resolvedId) {
       ack?.({ error: "Link do YouTube inválido." });
       return;
     }
     // Se o título já veio da busca, usamos direto; senão (link colado),
     // buscamos via oEmbed.
-    const resolvedTitle = title || (await fetchYoutubeTitle(resolvedId));
+    const cleanTitle = typeof title === "string" ? title.trim().slice(0, 200) : "";
+    const resolvedTitle = cleanTitle || (await fetchYoutubeTitle(resolvedId));
     // A busca do título é assíncrona: nesse meio tempo a pessoa pode ter
     // saído da sala ou da cabine.
     if (getRoomOf(socket.id) !== room || !room.state.booth.includes(socket.id)) {
@@ -429,14 +543,16 @@ io.on("connection", (socket) => {
       ack?.({ error: "Sua fila já está cheia." });
       return;
     }
-    broadcastState(room);
-    tryPlayNextIfIdle(room); // caso seja a vez dele e ninguém esteja tocando
+    sendQueue(room, socket.id);
+    // caso seja a vez dele e ninguém esteja tocando
+    if (!tryPlayNextIfIdle(room)) broadcastState(room);
     ack?.({ ok: true });
   });
 
   socket.on("queue:remove", (index) => {
     const room = getRoomOf(socket.id);
     if (room && removeFromQueue(room.state, socket.id, index)) {
+      sendQueue(room, socket.id);
       broadcastState(room);
     }
   });
@@ -444,7 +560,7 @@ io.on("connection", (socket) => {
   socket.on("queue:reorder", ({ fromIndex, toIndex } = {}) => {
     const room = getRoomOf(socket.id);
     if (room && reorderQueue(room.state, socket.id, fromIndex, toIndex)) {
-      broadcastState(room);
+      sendQueue(room, socket.id);
     }
   });
 
@@ -455,32 +571,36 @@ io.on("connection", (socket) => {
     moveToNextDj(room);
   });
 
-  // Qualquer pessoa na cabine (ou o próprio DJ) pode pular a música atual.
+  // O DJ pode pular a própria música na hora. Os outros votam (ver
+  // track:vote), e a música é pulada quando metade de quem ouve votar.
   socket.on("track:skip", () => {
     const room = getRoomOf(socket.id);
-    if (!room) return;
-    const currentDjId = getCurrentDjId(room.state);
-    if (!currentDjId) return;
-    const isDj = socket.id === currentDjId;
-    const isInBooth = room.state.booth.includes(socket.id);
-    if (!isDj && !isInBooth) return;
+    if (!room || !room.state.currentTrack) return;
+    if (room.state.currentTrack.djId !== socket.id) return;
     moveToNextDj(room);
   });
 
-  socket.on("chat:message", (text) => {
+  // Curti / não curti / votar pra pular. Clicar de novo desfaz o voto.
+  socket.on("track:vote", (kind) => {
+    const room = getRoomOf(socket.id);
+    if (!room || !allow("vote")) return;
+    if (!toggleVote(room.state, socket.id, kind)) return;
+    if (kind === "skip" && skipIfVoted(room)) return;
+    broadcastState(room);
+  });
+
+  socket.on("chat:message", (text, ack) => {
     const room = getRoomOf(socket.id);
     const user = room?.state.users.get(socket.id);
     if (!user) return;
     const clean = String(text || "").trim().slice(0, MAX_CHAT_LENGTH);
     if (!clean) return;
-    pushChatMessage(room.state, {
-      id: nanoid(),
-      author: user.name,
-      authorId: user.id,
-      text: clean,
-      at: Date.now(),
-    });
-    broadcastState(room);
+    if (!allow("chat")) {
+      ack?.({ error: TOO_FAST });
+      return;
+    }
+    postChat(room, { author: user.name, authorId: user.id, text: clean });
+    ack?.({ ok: true });
   });
 
   // Reação rápida (emoji flutuante) — não faz parte do estado da sala, é só
@@ -488,7 +608,7 @@ io.on("connection", (socket) => {
   socket.on("reaction:send", (emoji) => {
     const room = getRoomOf(socket.id);
     if (!room) return;
-    if (!ALLOWED_REACTIONS.includes(emoji)) return;
+    if (!ALLOWED_REACTIONS.includes(emoji) || !allow("reaction")) return;
     io.to(room.id).emit("reaction:fly", { id: nanoid(), emoji, x: Math.random() });
   });
 
@@ -506,5 +626,5 @@ io.on("connection", (socket) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Som na Caixa server rodando em http://localhost:${PORT}`);
+  console.log(`Som na Caixa server rodando em http://localhost:${server.address().port}`);
 });

@@ -4,11 +4,9 @@ import MyQueueList from "./MyQueueList";
 import Equalizer from "./Equalizer";
 import { nameToColor } from "../nameColor";
 
-export default function DjBooth({ booth, currentDjId, currentTrack, myId }) {
-  const me = booth.find((user) => user.id === myId);
-  const isInBooth = Boolean(me);
+export default function DjBooth({ booth, currentDjId, currentTrack, myId, myQueue }) {
+  const isInBooth = booth.some((user) => user.id === myId);
   const isCurrentDj = currentDjId === myId;
-  const myQueue = me?.queue ?? [];
   const needsFirstSong = isCurrentDj && !currentTrack && myQueue.length === 0;
 
   function toggleBooth() {
@@ -45,9 +43,9 @@ export default function DjBooth({ booth, currentDjId, currentTrack, myId }) {
             {" "}
             — DJ <span style={{ color: nameToColor(currentTrack.djName) }}>{currentTrack.djName}</span>
           </span>
-          {isInBooth && (
+          {currentTrack.djId === myId && (
             <button className="btn btn--ghost" onClick={() => socket.emit("track:skip")}>
-              Pular
+              Pular minha música
             </button>
           )}
         </div>
@@ -60,7 +58,7 @@ export default function DjBooth({ booth, currentDjId, currentTrack, myId }) {
             {user.id === currentDjId ? <Equalizer /> : `${index + 1}. `}
             <span style={{ color: nameToColor(user.name) }}>{user.name}</span>
             {user.id === myId ? " (você)" : ""}
-            {user.queue?.length > 0 ? ` — ${user.queue.length} na fila` : ""}
+            {user.queueLength > 0 ? ` — ${user.queueLength} na fila` : ""}
           </li>
         ))}
       </ol>
