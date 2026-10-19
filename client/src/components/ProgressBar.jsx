@@ -2,23 +2,20 @@ import { useEffect, useState } from "react";
 import { nameToColor } from "../nameColor";
 
 export default function ProgressBar({ currentTrack }) {
-  const [percent, setPercent] = useState(0);
+  // Só o relógio fica no estado; a porcentagem é calculada a cada render.
+  const [now, setNow] = useState(() => Date.now());
+  const duration = currentTrack?.duration;
 
   useEffect(() => {
-    if (!currentTrack?.duration) {
-      setPercent(0);
-      return;
-    }
-    function tick() {
-      const elapsed = (Date.now() - currentTrack.startedAt) / 1000;
-      setPercent(Math.min(100, (elapsed / currentTrack.duration) * 100));
-    }
-    tick();
-    const interval = setInterval(tick, 500);
+    if (!duration) return;
+    const interval = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(interval);
-  }, [currentTrack?.videoId, currentTrack?.duration, currentTrack?.startedAt]);
+  }, [duration]);
 
-  if (!currentTrack?.duration) return null;
+  if (!duration) return null;
+
+  const elapsed = (now - currentTrack.startedAt) / 1000;
+  const percent = Math.min(100, Math.max(0, (elapsed / duration) * 100));
 
   return (
     <div className="progress-bar">
