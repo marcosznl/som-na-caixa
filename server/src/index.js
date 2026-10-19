@@ -285,11 +285,24 @@ function leaveCurrentRoom(socketId) {
   }
 }
 
+// Guarda nome/ícone na conexão. Vai junto com o pedido de criar ou entrar
+// numa sala, já que a escolha do nome fica na mesma página da lista.
+function setIdentity(socket, rawName, icon) {
+  socket.data.name = String(rawName || "").trim().slice(0, MAX_NAME_LENGTH) || `user-${nanoid(4)}`;
+  socket.data.icon = isValidIcon(icon) ? icon : null;
+}
+
 io.on("connection", (socket) => {
+  // Conexão nova: já entra na lista de salas, que aparece na página inicial
+  // antes mesmo de a pessoa escolher um nome.
+  if (!socket.recovered) {
+    socket.join(LOBBY_CHANNEL);
+    socket.emit("lobby:sync", listRooms());
+  }
+
   // Reconectou a tempo (dentro da folga) depois de uma queda rápida: cancela
-  // a remoção que estava agendada e não precisa passar pelo user:join de novo
-  // — pro socket.io, é literalmente a mesma conexão de antes (mesmo id, mesmas
-  // salas e mesmo socket.data).
+  // a remoção que estava agendada — pro socket.io, é literalmente a mesma
+  // conexão de antes (mesmo id, mesmas salas e mesmo socket.data).
   if (socket.recovered) {
     const pending = pendingDisconnects.get(socket.id);
     if (pending) {
@@ -304,22 +317,8 @@ io.on("connection", (socket) => {
     }
   }
 
-  // Escolheu o nome na tela inicial: guarda nome/ícone na conexão e manda pra
-  // lista de salas.
-  socket.on("user:join", ({ name: rawName, icon } = {}, ack) => {
-    const name = String(rawName || "").trim().slice(0, MAX_NAME_LENGTH) || `user-${nanoid(4)}`;
-    socket.data.name = name;
-    socket.data.icon = isValidIcon(icon) ? icon : null;
-    socket.join(LOBBY_CHANNEL);
-    ack?.({ id: socket.id, name, rooms: listRooms() });
-  });
-
-  socket.on("room:create", ({ name: rawName } = {}, ack) => {
-    if (!socket.data.name) {
-      ack?.({ error: "Escolha um nome antes de criar uma sala." });
-      return;
-    }
-    const name = String(rawName || "").trim().slice(0, MAX_ROOM_NAME_LENGTH);
+  socket.on("room:create", ({ roomName, name: userName, icon } = {}, ack) => {
+    const name = String(roomName || "").trim().slice(0, MAX_ROOM_NAME_LENGTH);
     if (!name) {
       ack?.({ error: "Dê um nome pra sala." });
       return;
@@ -331,22 +330,20 @@ io.on("connection", (socket) => {
       ack?.({ error: "Já existe uma sala com esse nome." });
       return;
     }
+    setIdentity(socket, userName, icon);
     const room = { id: nanoid(8), name, state: createRoomState(), safetyTimeout: null };
     rooms.set(room.id, room);
     enterRoom(socket, room);
     ack?.({ roomId: room.id });
   });
 
-  socket.on("room:join", ({ roomId } = {}, ack) => {
-    if (!socket.data.name) {
-      ack?.({ error: "Escolha um nome antes de entrar numa sala." });
-      return;
-    }
+  socket.on("room:join", ({ roomId, name: userName, icon } = {}, ack) => {
     const room = rooms.get(roomId);
     if (!room) {
       ack?.({ error: "Essa sala não existe mais." });
       return;
     }
+    setIdentity(socket, userName, icon);
     if (getRoomOf(socket.id) !== room) {
       enterRoom(socket, room);
     }

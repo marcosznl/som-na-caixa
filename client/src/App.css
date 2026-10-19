@@ -68,11 +68,6 @@
   color: #e05c5c;
   font-size: 14px;
 }
-.join-screen__submit {
-  padding: 10px 12px;
-  font-size: 16px;
-  font-weight: 600;
-}
 
 /* Lista de salas */
 .join-screen__card.lobby {
@@ -100,6 +95,10 @@
 }
 .lobby__empty {
   font-size: 14px;
+}
+.join-screen__card p.lobby__hint {
+  font-size: 13px;
+  margin: 0;
 }
 .lobby__room {
   display: flex;
