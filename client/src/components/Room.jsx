@@ -9,8 +9,8 @@ import ReactionFloaters from "./ReactionFloaters";
 import ProgressBar from "./ProgressBar";
 import IconPicker from "./IconPicker";
 
-export default function Room({ roomState, myId }) {
-  const { users, booth, currentDjId, currentTrack, chatHistory, playHistory } = roomState;
+export default function Room({ roomState, myId, onLeave }) {
+  const { users, booth, currentDjId, currentTrack, chatHistory, playHistory, roomName } = roomState;
   const isCurrentDj = currentDjId === myId;
   const me = users.find((user) => user.id === myId);
   const myBoothEntry = booth.find((user) => user.id === myId);
@@ -58,8 +58,14 @@ export default function Room({ roomState, myId }) {
   return (
     <div className="room">
       <header className="room__header">
-        <h1>Som na Caixa 🎧</h1>
+        <div className="room__header-left">
+          <h1>Som na Caixa 🎧</h1>
+          {roomName && <span className="room__name">{roomName}</span>}
+        </div>
         <div className="room__header-right">
+          <button className="btn btn--small" onClick={onLeave}>
+            Trocar de sala
+          </button>
           <span className="room__user-count">{users.length} na sala</span>
           <IconPicker currentIcon={me?.icon} />
           <ThemeToggle />

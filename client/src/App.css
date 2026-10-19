@@ -69,6 +69,58 @@
   font-size: 14px;
 }
 
+/* Lista de salas */
+.join-screen__card.lobby {
+  max-width: 480px;
+}
+.lobby__create {
+  display: flex;
+  gap: 8px;
+}
+.lobby__create input {
+  flex: 1;
+  min-width: 0;
+}
+.lobby__heading {
+  font-size: 16px;
+  margin: 12px 0 0;
+}
+.lobby__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lobby__empty {
+  font-size: 14px;
+}
+.lobby__room {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.lobby__room-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.lobby__room-name {
+  color: var(--text-h);
+  overflow-wrap: anywhere;
+}
+.lobby__room-meta {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Sala */
 .room {
   flex: 1;
@@ -87,6 +139,17 @@
 .room__header h1 {
   font-size: 22px;
   margin: 0;
+}
+.room__header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+.room__name {
+  color: var(--text-h);
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 .room__header-right {
   display: flex;

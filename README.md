@@ -1,14 +1,16 @@
 # Som na Caixa 🎧
 
-Recriação simplificada do plug.dj para uso pessoal: uma sala única onde
-qualquer pessoa pode entrar na fila de DJs, tocar músicas do YouTube em
-sincronia com todo mundo, e conversar no chat.
+Recriação simplificada do plug.dj: qualquer pessoa escolhe um nome, cria
+uma sala ou entra em uma que já está aberta, e lá pode entrar na fila de
+DJs, tocar músicas do YouTube em sincronia com todo mundo e conversar no
+chat. Não tem senha nem conta.
 
 ## Como funciona
 
 - **Backend** (`server/`): Node.js + Express + Socket.IO. Mantém o estado da
-  sala inteiramente em memória (reinicia se o processo cair) — usuários
-  conectados, fila de DJs, faixa tocando agora e histórico de chat.
+  salas inteiramente em memória (reinicia se o processo cair) — usuários
+  conectados, fila de DJs, faixa tocando agora e histórico de chat de cada
+  sala. Uma sala é apagada quando a última pessoa sai.
 - **Frontend** (`client/`): React + Vite. Usa a YouTube IFrame API para
   reproduzir o vídeo e se sincroniza com o horário de início que o servidor
   manda (`startedAt`), corrigindo o "relógio" a cada poucos segundos.
@@ -61,9 +63,12 @@ VITE_SERVER_URL=http://SEU_IP_LOCAL:3001
 
 e ajuste `CLIENT_ORIGIN` no ambiente do servidor (`server`) se necessário.
 
-## Próximos passos possíveis
+## Deploy no Render
 
-- Múltiplas salas
-- Login/contas persistentes
-- Sistema de votos (woot/meh) e histórico de músicas
-- Deploy (Render/Railway/Fly.io) para acesso remoto
+O repositório tem um `render.yaml`. No Render, use **New → Blueprint**,
+escolha este repositório e informe a `YOUTUBE_API_KEY` quando pedir. O mesmo
+serviço entrega o front-end, a API e o websocket.
+
+No plano gratuito o serviço dorme depois de um tempo sem acesso e leva
+cerca de um minuto pra acordar; como tudo fica em memória, as salas
+começam vazias de novo.

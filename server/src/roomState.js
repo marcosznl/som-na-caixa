@@ -1,4 +1,4 @@
-// Estado da sala única, tudo em memória (reinicia se o servidor cair).
+// Estado de uma sala, tudo em memória (reinicia se o servidor cair).
 // A ideia central: existe uma "cabine" (booth) com a fila de DJs, e cada DJ
 // tem sua própria fila de músicas (pode adicionar quantas quiser a qualquer
 // momento). O DJ da vez toca a próxima música da fila dele; quando acaba (ou

@@ -3,13 +3,12 @@ import ThemeToggle from "./ThemeToggle";
 
 export default function JoinScreen({ onJoin, error }) {
   const [name, setName] = useState("");
-  const [password, setPassword] = useState("");
 
   function handleSubmit(event) {
     event.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) return;
-    onJoin(trimmed, password);
+    onJoin(trimmed);
   }
 
   return (
@@ -17,7 +16,7 @@ export default function JoinScreen({ onJoin, error }) {
       <ThemeToggle />
       <form className="join-screen__card" onSubmit={handleSubmit}>
         <h1>Som na Caixa 🎧</h1>
-        <p>Escolha um nome para entrar na sala.</p>
+        <p>Escolha um nome para continuar.</p>
         <input
           autoFocus
           maxLength={24}
@@ -25,15 +24,9 @@ export default function JoinScreen({ onJoin, error }) {
           value={name}
           onChange={(event) => setName(event.target.value)}
         />
-        <input
-          type="password"
-          placeholder="Senha da sala (se houver)"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-        />
         {error && <p className="join-screen__error">{error}</p>}
         <button type="submit" disabled={!name.trim()}>
-          Entrar na sala
+          Continuar
         </button>
       </form>
     </div>

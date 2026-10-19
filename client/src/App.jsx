@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { socket } from "./socket";
 import { getStoredIcon } from "./icons";
 import JoinScreen from "./components/JoinScreen";
+import Lobby from "./components/Lobby";
 import Room from "./components/Room";
 import "./App.css";
 
@@ -12,6 +13,7 @@ const EMPTY_ROOM_STATE = {
   currentTrack: null,
   chatHistory: [],
   playHistory: [],
+  roomName: "",
 };
 
 // Quanto tempo esperar por uma reconexão automática antes de desistir e
@@ -22,9 +24,11 @@ const EMPTY_ROOM_STATE = {
 const RECONNECT_TIMEOUT_MS = 25 * 1000;
 
 export default function App() {
-  const [joined, setJoined] = useState(false);
+  // "name" (tela inicial) -> "lobby" (lista de salas) -> "room" (dentro de uma sala)
+  const [screen, setScreen] = useState("name");
   const [joinError, setJoinError] = useState("");
   const [reconnecting, setReconnecting] = useState(false);
+  const [rooms, setRooms] = useState([]);
   const [roomState, setRoomState] = useState(EMPTY_ROOM_STATE);
   const reconnectTimeoutRef = useRef(null);
   const joinedRef = useRef(false);
@@ -32,6 +36,9 @@ export default function App() {
   useEffect(() => {
     function handleSync(nextState) {
       setRoomState(nextState);
+    }
+    function handleLobbySync(nextRooms) {
+      setRooms(nextRooms);
     }
     function handleDisconnect() {
       if (!joinedRef.current) return;
@@ -41,7 +48,9 @@ export default function App() {
       setReconnecting(true);
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = setTimeout(() => {
-        setJoined(false);
+        joinedRef.current = false;
+        setScreen("name");
+        setRoomState(EMPTY_ROOM_STATE);
         setReconnecting(false);
         setJoinError("Conexão perdida com o servidor. Tente entrar novamente.");
       }, RECONNECT_TIMEOUT_MS);
@@ -49,37 +58,64 @@ export default function App() {
     function handleConnect() {
       clearTimeout(reconnectTimeoutRef.current);
       setReconnecting(false);
+      // Reconectou, mas o servidor não reconheceu a conexão antiga (passou do
+      // prazo de recuperação ou o servidor reiniciou): nome e sala se
+      // perderam, então volta pra tela inicial.
+      if (joinedRef.current && !socket.recovered) {
+        joinedRef.current = false;
+        setScreen("name");
+        setRoomState(EMPTY_ROOM_STATE);
+        setJoinError("Conexão perdida com o servidor. Tente entrar novamente.");
+      }
     }
 
     socket.on("state:sync", handleSync);
+    socket.on("lobby:sync", handleLobbySync);
     socket.on("disconnect", handleDisconnect);
     socket.on("connect", handleConnect);
     return () => {
       socket.off("state:sync", handleSync);
+      socket.off("lobby:sync", handleLobbySync);
       socket.off("disconnect", handleDisconnect);
       socket.off("connect", handleConnect);
       clearTimeout(reconnectTimeoutRef.current);
     };
   }, []);
 
-  function handleJoin(name, password) {
+  function handleJoin(name) {
     setJoinError("");
     socket.connect();
-    socket.emit("user:join", { name, password, icon: getStoredIcon() }, (response) => {
-      if (response?.error) {
-        // Não desconecta aqui: isso disparava o handler de "disconnect" e
-        // sobrescrevia essa mensagem de erro com "Conexão perdida...".
-        // Ficar conectado sem ter "entrado" é inofensivo — o servidor não
-        // adiciona esse socket a lugar nenhum até um user:join bem-sucedido.
-        setJoinError(response.error);
-        return;
-      }
+    socket.emit("user:join", { name, icon: getStoredIcon() }, (response) => {
       joinedRef.current = true;
-      setJoined(true);
+      setRooms(response?.rooms ?? []);
+      setScreen("lobby");
     });
   }
 
-  if (!joined) {
+  // Usado tanto pra criar uma sala nova quanto pra entrar numa que já existe.
+  // Devolve a mensagem de erro (ou null) pro Lobby mostrar.
+  function enterRoom(event, payload) {
+    return new Promise((resolve) => {
+      socket.emit(event, payload, (response) => {
+        if (response?.error) {
+          resolve(response.error);
+          return;
+        }
+        setScreen("room");
+        resolve(null);
+      });
+    });
+  }
+
+  function handleLeaveRoom() {
+    socket.emit("room:leave", (response) => {
+      setRooms(response?.rooms ?? []);
+    });
+    setRoomState(EMPTY_ROOM_STATE);
+    setScreen("lobby");
+  }
+
+  if (screen === "name") {
     return <JoinScreen onJoin={handleJoin} error={joinError} />;
   }
 
@@ -88,7 +124,15 @@ export default function App() {
       {reconnecting && (
         <div className="reconnect-banner">Conexão instável, reconectando…</div>
       )}
-      <Room roomState={roomState} myId={socket.id} />
+      {screen === "lobby" ? (
+        <Lobby
+          rooms={rooms}
+          onCreate={(name) => enterRoom("room:create", { name })}
+          onJoin={(roomId) => enterRoom("room:join", { roomId })}
+        />
+      ) : (
+        <Room roomState={roomState} myId={socket.id} onLeave={handleLeaveRoom} />
+      )}
     </>
   );
 }
